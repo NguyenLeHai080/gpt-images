@@ -1,7 +1,23 @@
+import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import jwt
 from app.core.config import settings
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Xác thực mật khẩu plain-text với mã băm bcrypt"""
+    try:
+        password_bytes = plain_password.encode('utf-8')[:72]
+        hash_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hash_bytes)
+    except Exception:
+        return False
+
+def get_password_hash(password: str) -> str:
+    """Tạo mã băm bcrypt bảo mật cho mật khẩu"""
+    password_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()

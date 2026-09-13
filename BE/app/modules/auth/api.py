@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from app.core.responses import success_response, error_response
 from app.modules.auth.schemas import LoginRequest
-from app.modules.auth.services import auth_service, MOCK_USER
+from app.modules.auth.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -18,4 +18,7 @@ def login(payload: LoginRequest):
 
 @router.get("/me")
 def get_current_user():
-    return success_response(MOCK_USER.model_dump(), "Lấy thông tin người dùng thành công")
+    user = auth_service.get_user_by_email("admin@mintforge.vn")
+    if not user:
+        return error_response("NOT_FOUND", "Không tìm thấy người dùng")
+    return success_response(user.model_dump(), "Lấy thông tin người dùng thành công")
