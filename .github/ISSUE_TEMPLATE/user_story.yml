@@ -1,0 +1,72 @@
+name: "📖 User Story (Agile Backlog)"
+description: "Tạo User Story mới theo định dạng Agile Scrum chuẩn có Acceptance Criteria và DoR"
+title: "[STORY]: <Tên ngắn gọn của User Story>"
+labels: ["user-story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 📌 Tiêu Chuẩn Agile User Story
+        Một User Story cần mô tả rõ ràng giá trị mang lại cho người dùng cuối và đạt chuẩn **Definition of Ready (DoR)** trước khi đưa vào Sprint Planning.
+  - type: textarea
+    id: user-story
+    attributes:
+      label: "Định Dạng User Story (Bắt buộc)"
+      placeholder: |
+        Là một [vai trò người dùng - ví dụ: Người sáng tạo nội dung],
+        Tôi muốn [tính năng mong muốn - ví dụ: tạo ảnh chất lượng cao từ prompt văn bản],
+        Để [giá trị nhận được - ví dụ: tiết kiệm thời gian thiết kế banner minh họa].
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Tiêu Chí Chấp Nhận (Acceptance Criteria - Gherkin Syntax)"
+      placeholder: |
+        Kịch bản 1: Tạo ảnh thành công (Happy Path)
+        - Given người dùng đã đăng nhập và có ít nhất 1 Credit khả dụng
+        - When người dùng nhập prompt hợp lệ và bấm nút "Tạo ảnh"
+        - Then hệ thống trừ 1 Credit và hiển thị ảnh hoàn tất trong vòng 8 giây.
+
+        Kịch bản 2: Số dư credit không đủ (Error Case)
+        - Given người dùng có 0 Credit
+        - When người dùng bấm nút "Tạo ảnh"
+        - Then hệ thống hiển thị thông báo "Số dư không đủ" và mở modal nạp credit.
+    validations:
+      required: true
+  - type: dropdown
+    id: story-points
+    attributes:
+      label: "Ước lượng Độ Phức Tạp (Story Points - Fibonacci)"
+      options:
+        - "1 SP (Trivial - Rất nhỏ)"
+        - "2 SP (Small - Nhỏ)"
+        - "3 SP (Medium - Trung bình)"
+        - "5 SP (Large - Lớn)"
+        - "8 SP (Complex - Tối đa trong Sprint)"
+        - "Chưa ước lượng (Cần Planning Poker)"
+    validations:
+      required: true
+  - type: dropdown
+    id: business-domain
+    attributes:
+      label: "Phân Hệ Nghiệp Vụ (Business Domain)"
+      options:
+        - "01 - Authentication & User Profile"
+        - "02 - AI Generation Engine"
+        - "03 - Gallery & Asset Management"
+        - "04 - Billing & Credits Management"
+    validations:
+      required: true
+  - type: checkboxes
+    id: dor-checklist
+    attributes:
+      label: "Checklist Tiêu Chuẩn Sẵn Sàng (Definition of Ready - DoR)"
+      options:
+        - label: "Yêu cầu nghiệp vụ rõ ràng, không còn thắc mắc mơ hồ"
+          required: true
+        - label: "Đã có tối thiểu 2-3 kịch bản Acceptance Criteria (Happy path & Error case)"
+          required: true
+        - label: "Thiết kế UI/UX mockup hoặc Wireframe đã sẵn sàng (nếu có giao diện)"
+        - label: "Không bị chặn bởi các module phụ thuộc kỹ thuật bên ngoài"
+          required: true

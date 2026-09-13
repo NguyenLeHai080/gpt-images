@@ -1,29 +1,36 @@
 # ✨ GPT-Images Platform
 
-> Nền tảng sáng tạo hình ảnh ứng dụng Generative AI thế hệ mới, áp dụng mô hình phân nhánh **Gitflow** chuẩn doanh nghiệp, kiểm soát chất lượng qua **Conventional Commits & Issue Tracking**, và hệ thống tài liệu phân rã theo **phân hệ nghiệp vụ (Business Domains)**.
+> Nền tảng sáng tạo hình ảnh ứng dụng Generative AI thế hệ mới, vận hành theo mô hình **Agile Scrum Framework** tối ưu hóa bởi Scrum Master, tích hợp quy chuẩn phân nhánh **Gitflow** chuẩn doanh nghiệp, kiểm soát chất lượng qua **Definition of Ready (DoR) / Definition of Done (DoD)**, và hệ thống tài liệu phân rã chuyên sâu theo **nghiệp vụ sản phẩm (Business Domains)**.
 
 ---
 
-## 📌 1. Cấu Trúc Nhánh Git (Gitflow Workflow)
+## 📌 1. Khung Vận Hành Sprint 2 Tuần & Gitflow
 
-Dự án áp dụng mô hình Gitflow với 3 nhánh vĩnh viễn và các nhánh tạm thời:
+Dự án áp dụng chu kỳ Sprint 2 tuần (10 ngày làm việc), gắn kết trực tiếp với các nhánh trong Gitflow:
 
 ```text
-[feat/*]   ──(PR)──>  [dev]   ──(Merge)──>  [staging]   ──(Release PR)──>  [prod]
-                        ▲                      ▲                                │
-                        │                      │                                ▼
-                        └──────(Sync)──────────┴─────────(Sync)────────── [hotfix/*]
+[Sprint Backlog] ──> [feat/GPT-xxx] ──(PR)──> [dev] ──(Merge Day 8)──> [staging] ──(Demo & Release)──> [prod] (vX.Y.0)
+                                                ▲                         ▲                                 │
+                                                │                         │                                 ▼
+                                                └────────(Reverse Sync)───┴─────────(Sync)────────── [hotfix/*]
 ```
 
-- **`prod`**: Chứa mã nguồn thực tế đang chạy trên Production (Khóa push trực tiếp).
-- **`staging`**: Môi trường kiểm thử QA, UAT và demo trước khi release.
-- **`dev`**: Nhánh tích hợp trung tâm của các lập trình viên.
-- **`feat/<tên-tính-năng>`**: Nhánh phát triển tính năng mới (tách từ `dev`).
-- **`hotfix/<tên-lỗi>`**: Nhánh sửa lỗi khẩn cấp trực tiếp cho Production (tách từ `prod`).
+- **`prod`**: Nhánh Production chính thức, gắn các Release Tags tương ứng với từng Product Increment sau Sprint Demo (`v1.0.0`, `v1.0.1`,...).
+- **`staging`**: Môi trường Staging phục vụ QA kiểm thử và thực hiện **Live Demo tại Sprint Review**.
+- **`dev`**: Nhánh tích hợp liên tục (Continuous Integration) trong suốt thời gian Sprint diễn ra.
+- **`feat/GPT-xxx-<tên-tính-năng>`**: Nhánh phát triển User Story (tách từ `dev`).
+- **`hotfix/<tên-lỗi>`**: Nhánh xử lý sự cố khẩn cấp trên Production (tách từ `prod`).
 
 ---
 
-## 🏷️ 2. Quy Chuẩn Commit (Conventional Commits + Issue ID)
+## 🎯 2. Chốt Chặn Chất Lượng Agile (DoR & DoD)
+
+- **Definition of Ready (DoR)**: User Story phải có đầy đủ định dạng Agile (`Là một... Tôi muốn... Để...`), Acceptance Criteria dạng **Gherkin (Given-When-Then)**, wireframe UI, và đã được ước lượng Story Points (Fibonacci <= 8 SP) trước khi đưa vào Sprint.
+- **Definition of Done (DoD)**: Để hoàn thành User Story, mã nguồn phải có Unit Test coverage >= 80%, pass CI/CD, có PR review approval, đã deploy và pass kiểm thử trên môi trường **`staging`**, và được PO nghiệm thu tại buổi Sprint Review.
+
+---
+
+## 🏷️ 3. Quy Chuẩn Commit (Conventional Commits + Issue ID)
 
 Mọi commit **bắt buộc** tuân thủ cú pháp:
 
@@ -34,45 +41,42 @@ Mọi commit **bắt buộc** tuân thủ cú pháp:
 - **Độ dài tiêu đề**: Tối đa **50 ký tự** (không vượt quá 72 ký tự).
 - **Không dùng dấu chấm (`.`)** ở cuối dòng tiêu đề.
 - **Bắt buộc có Issue ID** (Ví dụ: `#GPT-101`, `#HOTFIX-201`, `#123`).
-- **Các Type hợp lệ**:
-  - `feat`: Thêm tính năng mới (Feature)
-  - `fix`: Sửa lỗi hệ thống / bug fix
-  - `refactor`: Tái cấu trúc code (không đổi tính năng)
-  - `docs`: Cập nhật tài liệu
-  - `chore`: Việc phụ trợ (cấu hình, công cụ, packages)
-  - `style`: Định dạng code, giao diện CSS
-  - `perf`: Tối ưu hóa hiệu năng
-  - `vendor`: Cập nhật phiên bản dependencies bên thứ ba
-  - `test`: Viết bài kiểm thử unit/integration test
+- **Các Type hợp lệ**: `feat`, `fix`, `refactor`, `docs`, `chore`, `style`, `perf`, `vendor`, `test`.
 
 ### Kích hoạt Git Hooks bảo vệ cục bộ:
-Sau khi clone dự án về máy, hãy chạy lệnh sau để tự động kích hoạt bộ kiểm tra commit và bảo vệ nhánh:
+Chạy lệnh sau để tự động kiểm soát commit message và chặn push trực tiếp vào `prod`/`staging`:
 ```bash
 git config core.hooksPath .githooks
 ```
 
 ---
 
-## 📚 3. Bản Đồ Tài Liệu Nghiệp Vụ (DOCS Matrix)
+## 📚 4. Hệ Sinh Thái Tài Liệu Nghiệp Vụ & Agile (`DOCS/`)
 
-Hệ thống tài liệu được phân chia theo từng nghiệp vụ chuyên sâu tại thư mục [`DOCS/`](DOCS/README.md):
+Hệ thống tài liệu được phân tách khoa học thành 6 phân hệ tại thư mục [`DOCS/`](DOCS/README.md):
 
 | Phân hệ tài liệu | Thư mục | Nội dung trọng tâm |
 | :--- | :--- | :--- |
-| **01 - Quy chuẩn Git & Vòng đời** | [`DOCS/01-quy-chuan-phat-trien-git/`](DOCS/01-quy-chuan-phat-trien-git/README.md) | Chiến lược phân nhánh, chuẩn commit, quy trình Review PR, kịch bản Hotfix & Lab thực hành. |
-| **02 - Nghiệp vụ Sản phẩm** | [`DOCS/02-nghiep-vu-san-pham/`](DOCS/02-nghiep-vu-san-pham/README.md) | Phân rã 4 Business Domains (Auth, AI Generator, Gallery, Billing) và Luồng người dùng. |
-| **03 - Kiến trúc Hệ thống** | [`DOCS/03-thiet-ke-kien-truc-he-thong/`](DOCS/03-thiet-ke-kien-truc-he-thong/README.md) | Kiến trúc tổng thể 3-tier, chuẩn REST API contracts và cơ sở dữ liệu quan hệ (ERD). |
-| **04 - Vận hành & Hạ tầng** | [`DOCS/04-van-hanh-va-ha-tang/`](DOCS/04-van-hanh-va-ha-tang/README.md) | Ma trận môi trường (Dev/Staging/Prod), cấu hình Branch Protection và quy trình CI/CD. |
+| **00 - Khung Quản Trị Agile Scrum** | [`DOCS/00-agile-scrum-framework/`](DOCS/00-agile-scrum-framework/README.md) | Chu kỳ Sprint 2 tuần, DoR, DoD, ước lượng Story Points (Fibonacci), 4 lễ hội Scrum, xử lý Blocker & Hotfix. |
+| **01 - Quy Chuẩn Gitflow & Kỹ Thuật** | [`DOCS/01-quy-chuan-phat-trien-git/`](DOCS/01-quy-chuan-phat-trien-git/README.md) | Mô hình phân nhánh Gitflow, chuẩn commit message, quy trình Review PR, kịch bản Hotfix & Lab thực hành. |
+| **02 - Nghiệp Vụ Sản Phẩm** | [`DOCS/02-nghiep-vu-san-pham/`](DOCS/02-nghiep-vu-san-pham/README.md) | Phân rã 4 Business Domains (Auth, AI Generator, Gallery, Billing) và Luồng người dùng End-to-End. |
+| **03 - Kiến Trúc Hệ Thống** | [`DOCS/03-thiet-ke-kien-truc-he-thong/`](DOCS/03-thiet-ke-kien-truc-he-thong/README.md) | Kiến trúc tổng thể 3-tier, chuẩn REST API JSON contracts và cơ sở dữ liệu quan hệ (ERD). |
+| **04 - Vận Hành & Hạ Tầng** | [`DOCS/04-van-hanh-va-ha-tang/`](DOCS/04-van-hanh-va-ha-tang/README.md) | Ma trận môi trường (Dev/Staging/Prod), cấu hình Branch Protection và pipeline CI/CD tự động. |
+| **05 - Bộ Biểu Mẫu Scrum Templates** | [`DOCS/05-bieu-mau-scrum-templates/`](DOCS/05-bieu-mau-scrum-templates/README.md) | Bộ mẫu: Biên bản Sprint Planning, Nhật ký Daily Standup, Kịch bản Demo Sprint Review, và Sprint Retrospective. |
 
 ---
 
-## 🚀 4. Cấu Trúc Mã Nguồn (Project Structure)
+## 🚀 5. Cấu Trúc Mã Nguồn (Project Structure)
 
 ```text
 gpt-images/
-├── .github/                     # Mẫu PR và Issue Templates
+├── .github/                     # Mẫu PR và Issue Templates (Agile User Story, Spike, Bug)
 │   ├── ISSUE_TEMPLATE/
-│   └── pull_request_template.md
+│   │   ├── bug_report.yml
+│   │   ├── feature_request.yml
+│   │   ├── spike_task.yml
+│   │   └── user_story.yml
+│   └── pull_request_template.md # PR Template tích hợp DoD Checklist
 ├── .githooks/                   # Git automation hooks (commit-msg, pre-push)
 │   ├── commit-msg
 │   └── pre-push
@@ -80,6 +84,6 @@ gpt-images/
 ├── FE/                          # Mã nguồn tầng Frontend (Landing page, Web app)
 │   ├── index.html
 │   └── style.css
-├── DOCS/                        # Tài liệu phân rã theo phân hệ nghiệp vụ
-└── README.md                    # Hướng dẫn tổng quan
+├── DOCS/                        # Tài liệu phân rã theo 6 phân hệ Agile & Nghiệp vụ
+└── README.md                    # Hướng dẫn tổng quan nền tảng
 ```
