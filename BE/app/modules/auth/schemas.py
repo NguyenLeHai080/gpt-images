@@ -12,7 +12,7 @@ class UserProfile(BaseModel):
     email: str
     full_name: str
     role: str = "SUPER_ADMIN"
-    avatar_url: str
+    avatar_url: Optional[str] = None
     company_name: str = "MintForge Business Suite"
 
 class TokenResponse(BaseModel):

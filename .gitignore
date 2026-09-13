@@ -1,14 +1,7 @@
 ### macOS
-# Finder metadata
 .DS_Store
-
-# Thumbnails
 ._*
-
-# Custom folder icons
-Icon
-
-# Volume root files
+Icon
 .DocumentRevisions-V100
 .fseventsd
 .Spotlight-V100
@@ -18,16 +11,9 @@ Icon
 .com.apple.timemachine.donotpresent
 
 ### Windows
-# Windows thumbnail cache files
 Thumbs.db
-
-# Folder config file
 [Dd]esktop.ini
-
-# Recycle Bin used on file shares
 $RECYCLE.BIN/
-
-# Windows shortcuts
 *.lnk
 
 ### Dependencies & Build
@@ -37,3 +23,14 @@ build/
 .env
 .env.local
 *.log
+
+### Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
