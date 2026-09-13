@@ -1,37 +1,46 @@
-## 📌 Liên kết Yêu cầu / Issue
-- **Issue ID**: Close # <!-- Điền ID issue tại đây, ví dụ: #GPT-101 hoặc #HOTFIX-201 -->
+## 📌 Liên Kết User Story / Issue
+- **Sprint**: Sprint `[Điền số Sprint]`
+- **Issue ID**: Close # <!-- Điền ID User Story, ví dụ: #GPT-101 hoặc #HOTFIX-201 -->
+- **Story Points**: `[1 / 2 / 3 / 5 / 8 SP]`
 
 ---
 
-## 🚀 Loại thay đổi (Type of Change)
+## 🚀 Loại Thay Đổi (Type of Change)
 Vui lòng đánh dấu `[x]` vào mục tương ứng:
-- [ ] `feat`: Tính năng mới cho người dùng
-- [ ] `fix`: Vá lỗi hệ thống / sửa bug
-- [ ] `refactor`: Tái cấu trúc code (không ảnh hưởng chức năng)
-- [ ] `perf`: Tối ưu hóa hiệu năng
-- [ ] `docs`: Cập nhật tài liệu
-- [ ] `chore`: Cấu hình / bảo trì hệ thống
-- [ ] `style`: Thay đổi giao diện CSS/UI
+- [ ] `feat`: Tính năng mới đáp ứng User Story
+- [ ] `fix`: Vá lỗi phát hiện trong quá trình kiểm thử
+- [ ] `refactor`: Tái cấu trúc mã nguồn (không đổi logic)
+- [ ] `perf`: Cải tiến hiệu năng hệ thống
+- [ ] `docs`: Bổ sung hoặc cập nhật tài liệu DOCS
+- [ ] `chore`: Cấu hình dependencies, build tools
 - [ ] `hotfix`: Sửa lỗi khẩn cấp trực tiếp cho Production
 
 ---
 
-## 📝 Mô tả tóm tắt (Description)
-<!-- Tóm tắt ngắn gọn lý do thay đổi và giải pháp kỹ thuật đã áp dụng -->
+## 📝 Tóm Tắt Giải Pháp Kỹ Thuật (Solution Summary)
+<!-- Mô tả ngắn gọn cách bạn giải quyết vấn đề và các file mã nguồn cốt lõi đã thay đổi -->
 
 ---
 
-## 🧪 Bằng chứng kiểm thử & Demo (Testing & Evidence)
-- [ ] Đã kiểm tra hoạt động trên môi trường Local.
-- [ ] Đã chạy các bộ Unit Test / Integration Test (nếu có).
-- [ ] Đã kiểm tra không có xung đột (conflicts) với nhánh đích (`dev`, `staging`, `prod`).
+## ✅ Tiêu Chuẩn Hoàn Thành (Definition of Done - DoD Checklist)
+> [!IMPORTANT]
+> **Tác giả PR và Reviewer bắt buộc phải kiểm tra và đánh dấu đầy đủ trước khi Merge!**
 
-*Ảnh chụp màn hình / GIF kết quả kiểm thử:*
-<!-- Dán link ảnh hoặc kéo thả hình ảnh vào đây -->
+### 1. Về Mã Nguồn & Kiểm Thử Tự Động (Code & Unit Tests):
+- [ ] Nhánh tạo theo chuẩn: `feat/GPT-xxx-...` hoặc `hotfix/xxx`.
+- [ ] Toàn bộ commit message tuân thủ **Conventional Commits + Issue ID**.
+- [ ] Đã viết hoặc cập nhật Unit Test với độ bao phủ (Coverage) >= 80%.
+- [ ] Không còn file rác, comment thừa, hoặc `console.log` debug.
+- [ ] Toàn bộ pipeline kiểm tra tự động trên CI (Linter, Typecheck, Build) đều xanh (Passed).
+
+### 2. Về Nghiệp Vụ & Nghiệm Thu (Acceptance Criteria):
+- [ ] Đã đối chiếu và thỏa mãn **100% Acceptance Criteria** được quy định trong Issue.
+- [ ] Đã đính kèm ảnh chụp màn hình / GIF bằng chứng kiểm thử hoạt động ở bên dưới.
+
+### 3. Về Tài Liệu (Documentation):
+- [ ] Đã cập nhật tài liệu tương ứng trong thư mục [`DOCS/`](DOCS/README.md) nếu có thay đổi về API Contract hoặc cấu hình.
 
 ---
 
-## ✅ Checklist cho Reviewer
-- [ ] Commit message đã tuân thủ chuẩn Conventional Commits & có Issue ID.
-- [ ] Không chứa mã nhạy cảm (API Keys, Passwords, Token, Environment secrets).
-- [ ] Mã nguồn rõ ràng, clean code và có comment giải thích các logic phức tạp.
+## 📸 Bằng Chứng Kiểm Thử (Testing Evidence)
+<!-- Dán ảnh chụp màn hình, kết quả chạy unit test, hoặc GIF demo tại đây -->
