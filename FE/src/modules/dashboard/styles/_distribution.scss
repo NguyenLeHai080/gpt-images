@@ -1,0 +1,85 @@
+/* Model Distribution Card */
+.mf-btn-pill-refresh {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-card-border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.mf-btn-pill-refresh:hover {
+  background-color: #F1F5F9;
+  color: var(--color-text-main);
+}
+
+.mf-spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.mf-models-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.mf-model-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mf-model-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mf-model-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-color: #FFF7ED;
+  color: #F97316;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.mf-model-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.mf-model-req-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.mf-model-progress-track {
+  width: 100%;
+  height: 6px;
+  background-color: #F1F5F9;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.mf-model-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F97316 0%, #FB923C 100%);
+  border-radius: 9999px;
+}

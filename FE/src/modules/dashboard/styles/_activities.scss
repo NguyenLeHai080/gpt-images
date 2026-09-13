@@ -1,0 +1,82 @@
+/* Bottom Grid: 3 Cards & Recent Activities */
+.mf-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 16px;
+}
+
+.mf-bottom-card {
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Recent Activities */
+.mf-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mf-activity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #F8FAFC;
+}
+
+.mf-activity-badge {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background-color: #EFF6FF;
+  color: #3B82F6;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mf-activity-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mf-activity-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.mf-activity-user {
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.mf-activity-dash {
+  color: #CBD5E1;
+}
+
+.mf-activity-model {
+  font-weight: 600;
+  color: #475569;
+}
+
+.mf-activity-status {
+  color: #10B981;
+  font-weight: 600;
+}
+
+.mf-activity-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.mf-activity-cost {
+  color: #F97316;
+  font-weight: 600;
+}

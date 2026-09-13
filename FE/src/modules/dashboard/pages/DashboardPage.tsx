@@ -7,10 +7,24 @@ import { ApiKeyGauge } from '../components/ApiKeyGauge';
 import { RecentActivityList } from '../components/RecentActivityList';
 import { OperationSummaryCard } from '../components/OperationSummaryCard';
 import { ModelDistributionCard } from '../components/ModelDistributionCard';
-import './dashboard.css';
+import { alert } from '../../../core/alert';
+import '../styles/dashboard.scss';
 
 export const DashboardPage: React.FC = () => {
   const { data, isRefreshing, refresh } = useDashboardData();
+
+  const handleRefresh = async () => {
+    alert.toast('Đang đồng bộ dữ liệu hệ thống...', 'info', { timer: 1500 });
+    await refresh();
+    alert.toast('Dữ liệu hệ thống đã được cập nhật mới nhất!', 'success');
+  };
+
+  const handleViewUsage = () => {
+    alert.info(
+      'Báo Cáo Sử Dụng API',
+      'Hệ thống đang phục vụ 28 API Key đang hoạt động, 33.861 requests thành công và tổng chi phí ghi nhận là 480 đ trong 7 ngày gần nhất.'
+    );
+  };
 
   return (
     <div className="mf-dashboard-page animate-fade-in">
@@ -30,12 +44,12 @@ export const DashboardPage: React.FC = () => {
         <div className="mf-page-actions">
           <button
             className={`mf-btn-refresh-outline ${isRefreshing ? 'mf-spinning' : ''}`}
-            onClick={refresh}
+            onClick={handleRefresh}
           >
             <RefreshCw size={14} />
             <span>Làm mới</span>
           </button>
-          <button className="mf-btn-view-usage">
+          <button className="mf-btn-view-usage" onClick={handleViewUsage}>
             <FileText size={15} />
             <span>Xem sử dụng</span>
           </button>

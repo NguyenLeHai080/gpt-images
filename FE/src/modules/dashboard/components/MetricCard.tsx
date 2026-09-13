@@ -2,7 +2,7 @@ import React from 'react';
 import { Wallet, TrendingUp, Receipt, Activity } from 'lucide-react';
 import { Card } from '../../../core/components/Card/Card';
 import type { MetricItem } from '../types';
-import '../pages/dashboard.css';
+import '../styles/dashboard.scss';
 
 interface MetricCardProps {
   metric: MetricItem;

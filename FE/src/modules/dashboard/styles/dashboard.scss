@@ -1,0 +1,9 @@
+/* Dashboard Master SCSS - Modular Architecture */
+@use './header' as *;
+@use './metrics' as *;
+@use './charts' as *;
+@use './gauge' as *;
+@use './activities' as *;
+@use './summary' as *;
+@use './distribution' as *;
+@use './responsive' as *;

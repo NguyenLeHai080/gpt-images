@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../../core/hooks/useAuth';
+import { alert } from '../../../core/alert';
 import type { LoginCredentials } from '../types';
 
 export const useAuthForm = (onSuccess?: () => void) => {
@@ -22,18 +23,24 @@ export const useAuthForm = (onSuccess?: () => void) => {
     e.preventDefault();
     if (!formData.email.trim()) {
       setError('Vui lòng nhập địa chỉ email');
+      alert.warning('Thông tin chưa đầy đủ', 'Vui lòng nhập địa chỉ email để tiếp tục.');
       return;
     }
 
     try {
       const ok = await login(formData.email, formData.password, formData.linkApiKey);
       if (ok) {
+        alert.toast('Đăng nhập thành công! Chào mừng trở lại.', 'success');
         if (onSuccess) onSuccess();
       } else {
-        setError('Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.');
+        const errMsg = 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
+        setError(errMsg);
+        alert.error('Đăng nhập thất bại', errMsg);
       }
     } catch (err: any) {
-      setError(err.message || 'Đã có lỗi xảy ra khi kết nối máy chủ');
+      const errMsg = err.message || 'Đã có lỗi xảy ra khi kết nối máy chủ';
+      setError(errMsg);
+      alert.error('Lỗi kết nối', errMsg);
     }
   };
 

@@ -1,0 +1,52 @@
+/* Operational Summary Card */
+.mf-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.mf-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mf-summary-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.mf-summary-badge--api {
+  background-color: #EFF6FF;
+  color: #2563EB;
+}
+
+.mf-summary-badge--ok {
+  background-color: #ECFDF5;
+  color: #059669;
+}
+
+.mf-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mf-summary-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.mf-summary-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
