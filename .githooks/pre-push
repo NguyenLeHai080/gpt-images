@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Git Pre-Push Hook - Branch Protection Enforcer
+# ==============================================================================
+
+# Git pre-push hook receives lines on stdin:
+# <local ref> <local sha1> <remote ref> <remote sha1>
+
+PROTECTED_BRANCHES=("refs/heads/prod" "refs/heads/staging")
+
+while read local_ref local_sha remote_ref remote_sha; do
+    for branch in "${PROTECTED_BRANCHES[@]}"; do
+        if [ "$remote_ref" = "$branch" ]; then
+            echo "================================================================================"
+            echo "🚫 CẢNH BÁO BẢO VỆ NHÁNH: KHÔNG ĐƯỢC PHÉP PUSH TRỰC TIẾP!"
+            echo "================================================================================"
+            echo "Nhánh đích được bảo vệ: $remote_ref"
+            echo ""
+            echo "👉 QUY TRÌNH BẮT BUỘC:"
+            echo "   1. Push code lên nhánh phụ (feat/... hoặc hotfix/...)"
+            echo "   2. Tạo Pull Request (PR) để Review code & Kiểm thử"
+            echo "   3. Chỉ merge vào '${remote_ref##*/}' khi đã được Approve đầy đủ!"
+            echo "================================================================================"
+            exit 1
+        fi
+    done
+done
+
+exit 0

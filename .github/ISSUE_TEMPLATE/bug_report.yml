@@ -1,0 +1,41 @@
+name: "🐛 Bug Report"
+description: "Báo cáo lỗi / sự cố kỹ thuật phát sinh trong hệ thống"
+title: "[BUG]: <Tóm tắt lỗi>"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Mô tả lỗi"
+      description: "Mô tả rõ ràng và súc tích về lỗi gặp phải."
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "Môi trường xảy ra lỗi"
+      options:
+        - "Production (prod)"
+        - "Staging (staging)"
+        - "Development (dev)"
+        - "Local"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Các bước tái hiện (Steps to Reproduce)"
+      placeholder: |
+        1. Đi tới trang '...'
+        2. Nhấp vào '....'
+        3. Nhập giá trị '....'
+        4. Thấy xuất hiện lỗi '....'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Kết quả mong đợi"
+      description: "Hệ thống cần hoạt động như thế nào khi đúng chuẩn."
+    validations:
+      required: true

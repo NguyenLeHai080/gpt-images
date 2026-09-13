@@ -1,0 +1,35 @@
+name: "🚀 Feature Request"
+description: "Đề xuất tính năng mới cho dự án GPT-Images"
+title: "[FEAT]: <Tên tính năng ngắn gọn>"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã đóng góp ý tưởng phát triển cho hệ thống GPT-Images!
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Bối cảnh & Vấn đề cần giải quyết"
+      description: "Mô tả lý do tại sao cần tính năng này hoặc người dùng gặp khó khăn gì hiện tại."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Giải pháp đề xuất & Yêu cầu nghiệp vụ"
+      description: "Mô tả chi tiết cách tính năng nên hoạt động từ góc độ người dùng (User Story)."
+    validations:
+      required: true
+  - type: dropdown
+    id: business-domain
+    attributes:
+      label: "Phân hệ nghiệp vụ (Business Domain)"
+      options:
+        - "Auth & Profile (Quản lý tài khoản)"
+        - "AI Generation Engine (Tạo ảnh Prompt)"
+        - "Gallery & Storage (Bộ sưu tập & Lưu trữ)"
+        - "Credits & Billing (Thanh toán & Gói dịch vụ)"
+        - "Khác"
+    validations:
+      required: true

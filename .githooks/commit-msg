@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Git Commit-Msg Hook - Conventional Commits & Issue ID Enforcer
+# ==============================================================================
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(head -n 1 "$COMMIT_MSG_FILE")
+
+# Allow merge and revert commits
+if [[ "$COMMIT_MSG" =~ ^Merge[[:space:]] ]] || [[ "$COMMIT_MSG" =~ ^Revert[[:space:]] ]]; then
+    exit 0
+fi
+
+# 1. Check Conventional Commits Type
+# Allowed types: feat, fix, refactor, docs, chore, style, perf, vendor, test, build, ci
+TYPE_REGEX="^(feat|fix|refactor|docs|chore|style|perf|vendor|test|build|ci)(\([a-zA-Z0-9_/-]+\))?:"
+
+if ! [[ "$COMMIT_MSG" =~ $TYPE_REGEX ]]; then
+    echo "================================================================================"
+    echo "❌ COMMIT MESSAGE KHÔNG HỢP LỆ (Sai chuẩn Conventional Commits)"
+    echo "================================================================================"
+    echo "Commit hiện tại: \"$COMMIT_MSG\""
+    echo ""
+    echo "📌 Cấu trúc chuẩn:"
+    echo "   <type>[optional scope]: <description> #<issue_id>"
+    echo ""
+    echo "📌 Các Type hợp lệ:"
+    echo "   - feat     : Thêm tính năng mới (Feature)"
+    echo "   - fix      : Vá lỗi / sửa bug"
+    echo "   - refactor : Cải tiến tái cấu trúc code (không đổi logic/tính năng)"
+    echo "   - docs     : Cập nhật tài liệu"
+    echo "   - chore    : Các việc bảo trì phụ (build, config, tools...)"
+    echo "   - style    : Thay đổi UI, format, css không ảnh hưởng logic code"
+    echo "   - perf     : Tối ưu hiệu năng xử lý"
+    echo "   - vendor   : Nâng cấp / thay đổi dependencies, third-party packages"
+    echo "   - test     : Bổ sung hoặc sửa đổi unit test"
+    echo "================================================================================"
+    exit 1
+fi
+
+# 2. Check for Issue ID requirement
+FULL_COMMIT_CONTENT=$(cat "$COMMIT_MSG_FILE")
+ISSUE_REGEX="(#|\[#)[a-zA-Z0-9_-]+"
+
+if ! [[ "$FULL_COMMIT_CONTENT" =~ $ISSUE_REGEX ]]; then
+    echo "================================================================================"
+    echo "❌ COMMIT MESSAGE THIẾU ISSUE ID"
+    echo "================================================================================"
+    echo "Commit hiện tại: \"$COMMIT_MSG\""
+    echo ""
+    echo "📌 Quy định bắt buộc: Mọi commit phải đi kèm Issue ID để truy vết lịch sử."
+    echo "   Ví dụ: feat(auth): add login with Google #GPT-101"
+    echo "          fix(checkout): resolve price calculation #HOTFIX-202"
+    echo "================================================================================"
+    exit 1
+fi
+
+# 3. Check for trailing dot '.' in the first line
+if [[ "$COMMIT_MSG" =~ \.$ ]]; then
+    echo "================================================================================"
+    echo "❌ TIÊU ĐỀ COMMIT KHÔNG ĐƯỢC KẾT THÚC BẰNG DẤU CHẤM '.'"
+    echo "================================================================================"
+    echo "Commit hiện tại: \"$COMMIT_MSG\""
+    echo "👉 Vui lòng xóa dấu '.' ở cuối câu."
+    echo "================================================================================"
+    exit 1
+fi
+
+# 4. Check length of first line (Recommended <= 50, Maximum 72)
+MSG_LEN=${#COMMIT_MSG}
+if [ "$MSG_LEN" -gt 72 ]; then
+    echo "================================================================================"
+    echo "❌ TIÊU ĐỀ COMMIT QUÁ DÀI ($MSG_LEN ký tự > tối đa 72 ký tự)"
+    echo "================================================================================"
+    echo "Commit hiện tại: \"$COMMIT_MSG\""
+    echo "👉 Khuyến khích: Sử dụng tối đa 50 ký tự cho tiêu đề. Chi tiết hãy đưa vào body."
+    echo "================================================================================"
+    exit 1
+fi
+
+exit 0
