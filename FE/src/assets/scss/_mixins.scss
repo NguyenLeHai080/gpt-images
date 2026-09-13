@@ -1,0 +1,63 @@
+// MintForge SCSS Mixins
+@use './variables' as *;
+
+// Flexbox Helpers
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Glassmorphism effect
+@mixin glassmorphism($bg-alpha: 0.7, $blur: 12px) {
+  background-color: rgba(17, 24, 39, $bg-alpha);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+// Custom Scrollbar
+@mixin custom-scrollbar($width: 6px, $thumb-color: rgba(148, 163, 184, 0.3), $thumb-hover: rgba(148, 163, 184, 0.5)) {
+  &::-webkit-scrollbar {
+    width: $width;
+    height: $width;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: $thumb-color;
+    border-radius: $radius-pill;
+    transition: background $transition-fast;
+    &:hover {
+      background: $thumb-hover;
+    }
+  }
+}
+
+// Text Truncation
+@mixin truncate-line($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// Brand Gradient Text
+@mixin brand-gradient-text {
+  background: linear-gradient(135deg, #ea580c 0%, #fb923c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
