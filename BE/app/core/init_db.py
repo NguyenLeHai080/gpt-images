@@ -103,41 +103,10 @@ def init_database() -> None:
         if act_count == 0:
             acts = [
                 ApiActivityLog(
-                    id="act_1",
-                    user_name="Nguyen Le Hai",
-                    model_name="gpt-image-2",
-                    status="success",
-                    cost=120.0,
-                    cost_display="120 đ",
-                    created_at=datetime(2026, 9, 12, 14, 19, 9),
-                ),
-                ApiActivityLog(
-                    id="act_2",
-                    user_name="Nguyen Le Hai",
-                    model_name="gpt-image-2",
-                    status="success",
-                    cost=120.0,
-                    cost_display="120 đ",
-                    created_at=datetime(2026, 9, 12, 14, 18, 22),
-                ),
-                ApiActivityLog(
-                    id="act_3",
-                    user_name="Nguyen Le Hai",
-                    model_name="gpt-image-2",
-                    status="success",
-                    cost=120.0,
-                    cost_display="120 đ",
-                    created_at=datetime(2026, 9, 12, 14, 15, 10),
-                ),
-                ApiActivityLog(
-                    id="act_4",
-                    user_name="Nguyen Le Hai",
-                    model_name="gpt-image-2",
-                    status="success",
-                    cost=120.0,
-                    cost_display="120 đ",
-                    created_at=datetime(2026, 9, 12, 14, 10, 5),
-                ),
+                    id=f"act_{i}", user_name="Nguyen Le Hai", model_name="gpt-image-2",
+                    status="success", cost=120.0, cost_display="120 đ",
+                    created_at=datetime(2026, 9, 12, 14, 20 - i * 3, 10)
+                ) for i in range(1, 5)
             ]
             db.add_all(acts)
             db.commit()

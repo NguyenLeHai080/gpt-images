@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../../../core/components/Card/Card';
 import { MoreHorizontal, ChevronDown } from 'lucide-react';
 import type { ChartPoint } from '../types';
+import { CHART_DIMS, getChartX, getChartY, generateSmoothPath } from './chartUtils';
 import '../styles/dashboard.scss';
 
 interface ApiCostChartProps {
@@ -12,52 +13,18 @@ export const ApiCostChart: React.FC<ApiCostChartProps> = ({ data }) => {
   const [hoveredPoint, setHoveredPoint] = useState<ChartPoint | null>(null);
   const selectedYear = '2026';
 
-  // Chart coordinate mapping
-  // Width = 640, Height = 220
-  // Y ranges from 0 to 240
-  const width = 640;
-  const height = 200;
-  const paddingLeft = 45;
-  const paddingBottom = 30;
-  const paddingTop = 15;
-  const paddingRight = 20;
+  const { width, height, paddingLeft, paddingRight, paddingTop } = CHART_DIMS;
+  const chartHeight = height - paddingTop - CHART_DIMS.paddingBottom;
+  const getX = (i: number) => getChartX(i, data.length);
+  const getY = getChartY;
 
-  const chartWidth = width - paddingLeft - paddingRight;
-  const chartHeight = height - paddingTop - paddingBottom;
-  const maxY = 240;
-
-  const getX = (index: number) => {
-    return paddingLeft + (index / (data.length - 1)) * chartWidth;
-  };
-
-  const getY = (val: number) => {
-    return paddingTop + chartHeight - (val / maxY) * chartHeight;
-  };
-
-  // Generate Smooth SVG Path (Cubic Bezier)
-  const generateSmoothPath = (points: { x: number; y: number }[]) => {
-    if (points.length === 0) return '';
-    let d = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i];
-      const p1 = points[i + 1];
-      const cpX1 = p0.x + (p1.x - p0.x) / 2;
-      const cpY1 = p0.y;
-      const cpX2 = p0.x + (p1.x - p0.x) / 2;
-      const cpY2 = p1.y;
-      d += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
-    }
-    return d;
-  };
-
-  // Cost curve coordinates
   const costPoints = data.map((d, i) => ({ x: getX(i), y: getY(d.cost) }));
   const costLinePath = generateSmoothPath(costPoints);
   const costAreaPath = `${costLinePath} L ${costPoints[costPoints.length - 1].x} ${paddingTop + chartHeight} L ${costPoints[0].x} ${paddingTop + chartHeight} Z`;
 
-  // Request curve coordinates
   const reqPoints = data.map((d, i) => ({ x: getX(i), y: getY(d.requests * 5) }));
   const reqLinePath = generateSmoothPath(reqPoints);
+
 
   return (
     <Card className="mf-chart-card">
