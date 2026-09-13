@@ -100,6 +100,19 @@ class ApiClient {
     }
   }
 
+  async patch<T>(endpoint: string, body: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'PATCH',
+        headers: this.getHeaders(options?.headers),
+        body: JSON.stringify(body),
+      });
+      return await this.processResponse<T>(response, options);
+    } catch (error: any) {
+      return this.handleError(error, `PATCH ${endpoint}`, options);
+    }
+  }
+
   async delete<T>(endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {

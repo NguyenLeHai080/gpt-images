@@ -1,0 +1,51 @@
+from typing import Optional, List
+from datetime import datetime
+from pydantic import BaseModel
+
+class UserAccountResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    role: str
+    company_name: str
+    avatar_url: Optional[str] = None
+    is_active: bool
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class CreateUserRequest(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    role: str = "MEMBER"
+    company_name: str = "MintForge Business Suite"
+    is_active: bool = True
+
+class UpdateUserRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+    company_name: Optional[str] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class UpdateRoleRequest(BaseModel):
+    role: str
+
+class ToggleStatusRequest(BaseModel):
+    is_active: bool
+
+class AccountStatsResponse(BaseModel):
+    total_users: int
+    active_users: int
+    inactive_users: int
+    super_admins: int
+    admins: int
+    developers: int
+    members: int
+
+class AccountsListResponse(BaseModel):
+    users: List[UserAccountResponse]
+    stats: AccountStatsResponse

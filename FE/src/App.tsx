@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './core/hooks/useAuth';
 import { ProtectedRoute } from './core/routes/ProtectedRoute';
@@ -7,6 +7,8 @@ import { LoginPage } from './modules/auth/pages/LoginPage';
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage';
 import { ApiKeysPage } from './modules/api-keys/pages/ApiKeysPage';
 import { BillingPage } from './modules/billing/pages/BillingPage';
+import { AccountsPage } from './modules/accounts/pages/AccountsPage';
+import { PermissionsPage } from './modules/permissions/pages/PermissionsPage';
 import { ErrorBoundary, ErrorPage, ErrorState } from './core/components/ErrorState';
 import { DemoSwitcher } from './core/components/DemoSwitcher';
 
@@ -35,8 +37,8 @@ export const App: React.FC = () => {
                       <Route path="banking" element={<BillingPage />} />
                       <Route path="credit-config" element={<BillingPage />} />
                       <Route path="sepay" element={<BillingPage />} />
-                      <Route path="accounts" element={<DashboardPage />} />
-                      <Route path="permissions" element={<DashboardPage />} />
+                      <Route path="accounts" element={<AccountsPage />} />
+                      <Route path="permissions" element={<PermissionsPage />} />
                       <Route path="packages" element={<DashboardPage />} />
                       <Route path="pricing" element={<DashboardPage />} />
                       <Route path="tools" element={<DashboardPage />} />

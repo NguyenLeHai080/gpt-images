@@ -1,4 +1,4 @@
-﻿from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,7 +14,9 @@ from app.modules.auth.api import router as auth_router
 from app.modules.dashboard.api import router as dashboard_router
 from app.modules.api_keys.api import router as api_keys_router
 from app.modules.billing.api import router as billing_router
-
+from app.modules.accounts.api import router as accounts_router
+from app.modules.permissions.api import router as permissions_router
+from app.modules.generations.api import router as generations_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialize database tables and seed initial data
@@ -85,6 +87,9 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(dashboard_router, prefix=settings.API_V1_STR)
 app.include_router(api_keys_router, prefix=settings.API_V1_STR)
 app.include_router(billing_router, prefix=settings.API_V1_STR)
+app.include_router(accounts_router, prefix=settings.API_V1_STR)
+app.include_router(permissions_router, prefix=settings.API_V1_STR)
+app.include_router(generations_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

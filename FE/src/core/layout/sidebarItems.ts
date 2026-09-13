@@ -1,4 +1,4 @@
-﻿import {
+import {
   Users,
   KeyRound,
   ShieldCheck,
@@ -18,6 +18,9 @@ export interface NavItemConfig {
   path: string;
   icon?: LucideIcon;
   isPill?: boolean;
+  requiredRoles?: ('SUPER_ADMIN' | 'ADMIN' | 'DEVELOPER' | 'MEMBER')[];
+  badge?: string;
+  badgeVariant?: 'brand' | 'purple' | 'info' | 'warning' | 'success';
 }
 
 export interface NavGroupConfig {
@@ -37,26 +40,26 @@ export const SIDEBAR_NAV_GROUPS: NavGroupConfig[] = [
   {
     header: 'TÀI KHOẢN & TRUY CẬP',
     items: [
-      { id: 'accounts', label: 'Tài khoản', path: '/app/accounts', icon: Users },
-      { id: 'api-keys', label: 'API Keys & gói dịch vụ', path: '/app/api-keys', icon: KeyRound },
-      { id: 'permissions', label: 'Phân quyền', path: '/app/permissions', icon: ShieldCheck },
+      { id: 'accounts', label: 'Tài khoản', path: '/app/accounts', icon: Users, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
+      { id: 'api-keys', label: 'API Keys & gói dịch vụ', path: '/app/api-keys', icon: KeyRound, requiredRoles: ['SUPER_ADMIN', 'ADMIN', 'DEVELOPER'] },
+      { id: 'permissions', label: 'Phân quyền', path: '/app/permissions', icon: ShieldCheck, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
     ],
   },
   {
     header: 'CREDIT & THANH TOÁN',
     items: [
       { id: 'wallet', label: 'Ví & dòng tiền', path: '/app/billing', icon: Wallet },
-      { id: 'banking', label: 'Ngân hàng & QR', path: '/app/banking', icon: Building2 },
-      { id: 'credit-config', label: 'Cấu hình Credit', path: '/app/credit-config', icon: Sliders },
+      { id: 'banking', label: 'Ngân hàng & QR', path: '/app/banking', icon: Building2, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
+      { id: 'credit-config', label: 'Cấu hình Credit', path: '/app/credit-config', icon: Sliders, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
       { id: 'sepay', label: 'Giao dịch nạp SePay', path: '/app/sepay', icon: ArrowDownToLine },
     ],
   },
   {
     header: 'CẤU HÌNH DỊCH VỤ',
     items: [
-      { id: 'packages', label: 'Cấu hình gói', path: '/app/packages', icon: Package },
+      { id: 'packages', label: 'Cấu hình gói', path: '/app/packages', icon: Package, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
       { id: 'pricing', label: 'Bảng giá model', path: '/app/pricing', icon: Receipt },
-      { id: 'tools', label: 'Cài đặt công cụ', path: '/app/tools', icon: Wrench },
+      { id: 'tools', label: 'Cài đặt công cụ', path: '/app/tools', icon: Wrench, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
     ],
   },
 ];

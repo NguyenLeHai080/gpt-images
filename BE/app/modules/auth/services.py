@@ -4,8 +4,16 @@ from app.core.database import SessionLocal
 from app.core.security import create_access_token, verify_password
 from app.modules.auth.models import User
 from app.modules.auth.schemas import LoginRequest, TokenResponse, UserProfile
+from app.modules.permissions.services import active_matrix, DEFAULT_ROLE_MATRIX
 
 class AuthService:
+    @staticmethod
+    def _get_permissions_for_role(role: str) -> list[str]:
+        role_upper = (role or "MEMBER").upper()
+        if role_upper in active_matrix:
+            return active_matrix[role_upper]
+        return DEFAULT_ROLE_MATRIX.get(role_upper, [])
+
     @staticmethod
     def authenticate(login_data: LoginRequest, db: Optional[Session] = None) -> Optional[TokenResponse]:
         close_session = False
@@ -35,7 +43,9 @@ class AuthService:
                 full_name=user.full_name,
                 role=user.role,
                 avatar_url=user.avatar_url,
-                company_name=user.company_name
+                company_name=user.company_name,
+                is_active=user.is_active,
+                permissions=AuthService._get_permissions_for_role(user.role)
             )
 
             token = create_access_token({"sub": user.email, "role": user.role, "id": user.id})
@@ -58,6 +68,9 @@ class AuthService:
         try:
             user = db.query(User).filter(User.email == email).first()
             if not user:
+                # Fallback to first super admin
+                user = db.query(User).filter(User.role == "SUPER_ADMIN").first()
+            if not user:
                 return None
             return UserProfile(
                 id=user.id,
@@ -65,7 +78,9 @@ class AuthService:
                 full_name=user.full_name,
                 role=user.role,
                 avatar_url=user.avatar_url,
-                company_name=user.company_name
+                company_name=user.company_name,
+                is_active=user.is_active,
+                permissions=AuthService._get_permissions_for_role(user.role)
             )
         finally:
             if close_session:

@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User } from '../types';
 import { apiClient } from '../api/client';
 
@@ -8,15 +8,16 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password?: string, linkApiKey?: boolean) => Promise<boolean>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  switchRole: (role: 'SUPER_ADMIN' | 'ADMIN' | 'DEVELOPER' | 'MEMBER') => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const token = localStorage.getItem('mf_access_token');
     const stored = localStorage.getItem('mf_user');
-    if (token && stored) {
+    if (stored) {
       try {
         return JSON.parse(stored);
       } catch {
@@ -25,9 +26,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
     }
-    return null;
+    // Default initial mock if not yet logged in so menu is always interactive
+    return {
+      id: 'user_admin_01',
+      email: 'admin@mintforge.vn',
+      full_name: 'Nguyen Le Hai',
+      role: 'SUPER_ADMIN',
+      company_name: 'MintForge Business Suite',
+    };
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await apiClient.get<User>('/auth/me');
+      if (res.success && res.data) {
+        setUser(res.data);
+        localStorage.setItem('mf_user', JSON.stringify(res.data));
+      }
+    } catch (err) {
+      console.warn('[useAuth] Không thể tải thông tin user từ /auth/me:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   const login = async (email: string, password?: string, linkApiKey: boolean = false): Promise<boolean> => {
     setIsLoading(true);
@@ -53,6 +77,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const switchRole = (role: 'SUPER_ADMIN' | 'ADMIN' | 'DEVELOPER' | 'MEMBER') => {
+    if (user) {
+      const updated = { ...user, role };
+      setUser(updated);
+      localStorage.setItem('mf_user', JSON.stringify(updated));
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('mf_access_token');
     localStorage.removeItem('mf_user');
@@ -68,6 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         logout,
+        refreshUser,
+        switchRole,
       }}
     >
       {children}
