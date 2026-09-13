@@ -1,0 +1,29 @@
+.mf-card {
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--color-card-shadow);
+  transition: all var(--transition-normal);
+}
+
+.mf-card--hoverable:hover {
+  box-shadow: var(--color-card-hover-shadow);
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+}
+
+.mf-card--padding-none {
+  padding: 0;
+}
+
+.mf-card--padding-sm {
+  padding: 14px;
+}
+
+.mf-card--padding-md {
+  padding: 20px;
+}
+
+.mf-card--padding-lg {
+  padding: 28px;
+}
