@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, Bell, BookOpen, Globe, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import avatarAdmin from '../../assets/img/avatar-admin.svg';
 import './layout.css';
 
 interface HeaderProps {
@@ -63,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenCreateModal, onNavigateToD
             onClick={() => setShowUserMenu(!showUserMenu)}
           >
             <img
-              src={user?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+              src={user?.avatar_url || avatarAdmin}
               alt={user?.full_name || 'Admin'}
               className="mf-user-avatar"
             />

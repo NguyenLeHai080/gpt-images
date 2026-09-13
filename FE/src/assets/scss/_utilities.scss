@@ -1,0 +1,36 @@
+// MintForge SCSS Utilities & Animations
+@use './variables' as *;
+@use './mixins' as *;
+
+.text-gradient-brand {
+  @include brand-gradient-text;
+}
+
+.custom-scrollbar-dark {
+  @include custom-scrollbar(5px, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.3));
+}
+
+.custom-scrollbar-light {
+  @include custom-scrollbar(6px, rgba(148, 163, 184, 0.3), rgba(148, 163, 184, 0.5));
+}
+
+// Background Radial Glow for Login Left Panel
+.bg-radial-glow {
+  background: radial-gradient(circle at 30% 20%, rgba(234, 88, 12, 0.15) 0%, rgba(11, 15, 25, 0) 65%),
+              radial-gradient(circle at 80% 80%, rgba(30, 41, 59, 0.5) 0%, rgba(11, 15, 25, 0) 70%),
+              #0b0f19;
+}
+
+// Micro Pulse Animation
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 3s infinite ease-in-out;
+}

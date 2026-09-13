@@ -1,12 +1,15 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import logoImg from '../../../assets/img/logo.svg';
+import meshImg from '../../../assets/img/concentric-mesh.svg';
 import '../pages/login.css';
 
 export const AuthBrandingPanel: React.FC = () => {
   return (
-    <div className="mf-auth-branding">
+    <div className="mf-auth-branding bg-radial-glow">
       {/* Background Concentric Circles Graphic */}
       <div className="mf-branding-decor" aria-hidden="true">
+        <img src={meshImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none" />
         <div className="mf-circle mf-circle--1" />
         <div className="mf-circle mf-circle--2" />
         <div className="mf-circle mf-circle--3" />
@@ -14,10 +17,7 @@ export const AuthBrandingPanel: React.FC = () => {
 
       {/* Top Brand Logo */}
       <div className="mf-branding-header">
-        <div className="mf-brand-logo-badge">
-          <span>MF</span>
-        </div>
-        <span className="mf-brand-logo-text">MintForge</span>
+        <img src={logoImg} alt="MintForge Logo" className="h-8 w-auto object-contain" />
       </div>
 
       {/* Center Value Proposition */}

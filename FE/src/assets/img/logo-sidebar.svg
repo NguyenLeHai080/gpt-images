@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <!-- Brand Mark -->
+  <rect x="0" y="6" width="36" height="36" rx="8" fill="#EA580C"/>
+  <text x="18" y="30" fill="#ffffff" font-family="'Inter', sans-serif" font-size="15" font-weight="800" text-anchor="middle">MI</text>
+  
+  <!-- Text Brand -->
+  <text x="48" y="24" fill="#ffffff" font-family="'Inter', sans-serif" font-size="16" font-weight="700">MintForge</text>
+  <text x="48" y="36" fill="#94a3b8" font-family="'Inter', sans-serif" font-size="9" font-weight="600" letter-spacing="1.2">BUSINESS SUITE</text>
+</svg>
