@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '../../../core/components/Card/Card';
 import { MoreHorizontal } from 'lucide-react';
 import type { ApiKeyStatus } from '../types';
-import '../pages/dashboard.css';
+import '../styles/dashboard.scss';
 
 interface ApiKeyGaugeProps {
   status: ApiKeyStatus;

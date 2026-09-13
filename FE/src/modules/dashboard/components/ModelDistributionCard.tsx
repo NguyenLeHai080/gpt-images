@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '../../../core/components/Card/Card';
 import { RefreshCw } from 'lucide-react';
 import type { ModelDistributionItem } from '../types';
-import '../pages/dashboard.css';
+import '../styles/dashboard.scss';
 
 interface ModelDistributionCardProps {
   models: ModelDistributionItem[];

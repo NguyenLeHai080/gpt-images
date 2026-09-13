@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../../../core/components/Card/Card';
 import type { OperationSummary } from '../types';
-import '../pages/dashboard.css';
+import '../styles/dashboard.scss';
 
 interface OperationSummaryCardProps {
   summary: OperationSummary;

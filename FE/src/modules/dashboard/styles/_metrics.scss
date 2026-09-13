@@ -1,0 +1,94 @@
+/* 4 Metric Cards Grid */
+.mf-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.mf-metric-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+}
+
+.mf-metric-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mf-metric-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mf-metric-icon-box--wallet {
+  background-color: rgba(249, 115, 22, 0.1);
+  color: #F97316;
+}
+
+.mf-metric-icon-box--trending-up {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10B981;
+}
+
+.mf-metric-icon-box--receipt {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3B82F6;
+}
+
+.mf-metric-icon-box--activity {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #8B5CF6;
+}
+
+.mf-metric-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.mf-metric-value-container {
+  margin-bottom: 10px;
+}
+
+.mf-metric-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-text-main);
+  letter-spacing: -0.5px;
+}
+
+.mf-metric-footer {
+  display: flex;
+  align-items: center;
+}
+
+.mf-metric-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+}
+
+.mf-metric-badge--success {
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #059669;
+}
+
+.mf-metric-badge--warning {
+  background-color: rgba(245, 158, 11, 0.08);
+  color: #D97706;
+}
+
+.mf-metric-badge--purple {
+  background-color: rgba(139, 92, 246, 0.08);
+  color: #7C3AED;
+}

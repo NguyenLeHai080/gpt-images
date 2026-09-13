@@ -5,6 +5,8 @@ import { Button } from '../../../core/components/Button/Button';
 import { KeyRound, Plus, Copy, Check } from 'lucide-react';
 import { useApiKeys } from '../hooks/useApiKeys';
 
+import { alert } from '../../../core/alert';
+
 export const ApiKeysPage: React.FC = () => {
   const { keys, isLoading } = useApiKeys();
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
@@ -12,7 +14,21 @@ export const ApiKeysPage: React.FC = () => {
   const handleCopy = (id: string, prefix: string) => {
     navigator.clipboard.writeText(prefix);
     setCopiedId(id);
+    alert.toast(`Đã sao chép mã Key: ${prefix}`, 'success', { timer: 2000 });
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCreateKey = async () => {
+    const confirmed = await alert.confirm({
+      title: 'Tạo API Key Mới?',
+      text: 'Một API Key bảo mật mới sẽ được khởi tạo với hạn mức mặc định 60 RPM.',
+      confirmButtonText: 'Xác nhận tạo',
+      cancelButtonText: 'Hủy bỏ',
+    });
+
+    if (confirmed) {
+      alert.toast('Khởi tạo API Key mới thành công!', 'success');
+    }
   };
 
   return (
@@ -26,7 +42,7 @@ export const ApiKeysPage: React.FC = () => {
             Quản lý và cấp quyền truy cập bảo mật cho các ứng dụng vệ tinh và đối tác.
           </p>
         </div>
-        <Button variant="primary" size="md" leftIcon={<Plus size={16} />}>
+        <Button variant="primary" size="md" leftIcon={<Plus size={16} />} onClick={handleCreateKey}>
           Tạo API Key mới
         </Button>
       </div>
