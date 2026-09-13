@@ -1,38 +1,33 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import './layout.css';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  activeTab?: string;
-  onSelectTab?: (tabId: string) => void;
   onNavigateToDocs?: () => void;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
   children,
-  activeTab = 'overview',
-  onSelectTab,
-  onNavigateToDocs
+  onNavigateToDocs,
 }) => {
-  const [currentTab, setCurrentTab] = useState(activeTab);
-
-  const handleSelectTab = (tabId: string) => {
-    setCurrentTab(tabId);
-    if (onSelectTab) {
-      onSelectTab(tabId);
-    }
-  };
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="mf-main-layout">
-      {/* Sidebar Left */}
-      <Sidebar currentTab={currentTab} onSelectTab={handleSelectTab} />
+      {/* Sidebar (Responsive Drawer on Mobile) */}
+      <Sidebar
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
 
       {/* Main Area Right */}
       <div className="mf-main-area">
-        <Header onNavigateToDocs={onNavigateToDocs} />
+        <Header
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onNavigateToDocs={onNavigateToDocs}
+        />
         <main className="mf-content-container">
           {children}
         </main>
