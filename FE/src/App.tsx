@@ -7,54 +7,73 @@ import { LoginPage } from './modules/auth/pages/LoginPage';
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage';
 import { ApiKeysPage } from './modules/api-keys/pages/ApiKeysPage';
 import { BillingPage } from './modules/billing/pages/BillingPage';
+import { ErrorBoundary, ErrorPage, ErrorState } from './core/components/ErrorState';
 import { DemoSwitcher } from './core/components/DemoSwitcher';
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Auth Routes */}
-          <Route path="/auth/login" element={<LoginPage />} />
-          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Auth Routes */}
+            <Route path="/auth/login" element={<LoginPage />} />
+            <Route path="/login" element={<Navigate to="/auth/login" replace />} />
 
-          {/* Standard Protected App Routes with /app Prefix */}
-          <Route
-            path="/app/*"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Routes>
-                    <Route path="overview" element={<DashboardPage />} />
-                    <Route path="dashboard" element={<Navigate to="/app/overview" replace />} />
-                    <Route path="api-keys" element={<ApiKeysPage />} />
-                    <Route path="billing" element={<BillingPage />} />
-                    <Route path="wallet" element={<BillingPage />} />
-                    <Route path="banking" element={<BillingPage />} />
-                    <Route path="credit-config" element={<BillingPage />} />
-                    <Route path="sepay" element={<BillingPage />} />
-                    <Route path="accounts" element={<DashboardPage />} />
-                    <Route path="permissions" element={<DashboardPage />} />
-                    <Route path="packages" element={<DashboardPage />} />
-                    <Route path="pricing" element={<DashboardPage />} />
-                    <Route path="tools" element={<DashboardPage />} />
-                    <Route path="" element={<Navigate to="overview" replace />} />
-                    <Route path="*" element={<Navigate to="overview" replace />} />
-                  </Routes>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Standard Protected App Routes with /app Prefix */}
+            <Route
+              path="/app/*"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <Routes>
+                      <Route path="overview" element={<DashboardPage />} />
+                      <Route path="dashboard" element={<Navigate to="/app/overview" replace />} />
+                      <Route path="api-keys" element={<ApiKeysPage />} />
+                      <Route path="billing" element={<BillingPage />} />
+                      <Route path="wallet" element={<BillingPage />} />
+                      <Route path="banking" element={<BillingPage />} />
+                      <Route path="credit-config" element={<BillingPage />} />
+                      <Route path="sepay" element={<BillingPage />} />
+                      <Route path="accounts" element={<DashboardPage />} />
+                      <Route path="permissions" element={<DashboardPage />} />
+                      <Route path="packages" element={<DashboardPage />} />
+                      <Route path="pricing" element={<DashboardPage />} />
+                      <Route path="tools" element={<DashboardPage />} />
+                      <Route path="" element={<Navigate to="overview" replace />} />
+                      <Route
+                        path="*"
+                        element={
+                          <ErrorState
+                            code="404"
+                            title="Không tìm thấy mục trong Workspace"
+                            description="Phân hệ hoặc trang quản trị bạn yêu cầu không tồn tại trong không gian làm việc."
+                          />
+                        }
+                      />
+                    </Routes>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Root Redirect to /app/overview */}
-          <Route path="/" element={<Navigate to="/app/overview" replace />} />
-          {/* Catch-all Redirect */}
-          <Route path="*" element={<Navigate to="/app/overview" replace />} />
-        </Routes>
+            {/* Direct Standard Error Pages */}
+            <Route path="/404" element={<ErrorPage code="404" />} />
+            <Route path="/403" element={<ErrorPage code="403" />} />
+            <Route path="/500" element={<ErrorPage code="500" />} />
+            <Route path="/503" element={<ErrorPage code="503" />} />
+            <Route path="/network-error" element={<ErrorPage code="network" />} />
 
-        <DemoSwitcher />
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Root Redirect to /app/overview */}
+            <Route path="/" element={<Navigate to="/app/overview" replace />} />
+            {/* Global Catch-all: 404 Not Found Page */}
+            <Route path="*" element={<ErrorPage code="404" />} />
+          </Routes>
+
+          <DemoSwitcher />
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

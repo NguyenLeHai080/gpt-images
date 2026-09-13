@@ -11,3 +11,5 @@ export * from './Checkbox';
 export * from './Tabs';
 export * from './Skeleton';
 export * from './Tooltip';
+export * from './ErrorState';
+
