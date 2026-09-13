@@ -2,10 +2,11 @@ import React from 'react';
 import { Card } from '../../../core/components/Card/Card';
 import { Badge } from '../../../core/components/Badge/Badge';
 import { Button } from '../../../core/components/Button/Button';
+import { Table, type Column } from '../../../core/components/Table';
 import { Wallet, ArrowDownToLine, QrCode, CreditCard } from 'lucide-react';
 import { useBilling } from '../hooks/useBilling';
-
 import { alert } from '../../../core/alert';
+import type { TransactionItem } from '../types';
 
 export const BillingPage: React.FC = () => {
   const { wallet, transactions, isLoading } = useBilling();
@@ -30,18 +31,55 @@ export const BillingPage: React.FC = () => {
     }
   };
 
+  const columns: Column<TransactionItem>[] = [
+    {
+      key: 'id',
+      title: 'Mã Giao Dịch',
+      dataIndex: 'id',
+      render: (val) => <span className="font-mono font-semibold text-slate-700">{val}</span>,
+    },
+    {
+      key: 'gateway',
+      title: 'Cổng Thanh Toán',
+      dataIndex: 'gateway',
+      render: (val) => <span className="font-semibold text-slate-800">{val}</span>,
+    },
+    {
+      key: 'amount',
+      title: 'Số Tiền',
+      dataIndex: 'amount',
+      sortable: true,
+      render: (val) => <span className="font-bold text-emerald-600">{val}</span>,
+    },
+    {
+      key: 'description',
+      title: 'Nội Dung',
+      dataIndex: 'description',
+      render: (val) => <span className="text-slate-600">{val}</span>,
+    },
+    {
+      key: 'created_at',
+      title: 'Thời Gian',
+      dataIndex: 'created_at',
+      render: (val) => <span className="text-slate-500">{val}</span>,
+    },
+    {
+      key: 'status',
+      title: 'Trạng Thái',
+      align: 'right',
+      render: () => <Badge variant="success">Hoàn thành</Badge>,
+    },
+  ];
+
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="animate-fade-in flex flex-col gap-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--color-text-main)' }}>
-            Ví & Dòng tiền doanh nghiệp
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-            Quản lý số dư API, nạp tiền tự động qua SePay và đối soát ngân hàng QR.
-          </p>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Ví & Dòng Tiền Doanh Nghiệp</h1>
+          <p className="text-sm text-slate-500 mt-1">Quản lý số dư API, nạp tiền tự động qua SePay và đối soát ngân hàng QR.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="flex items-center gap-2.5">
           <Button variant="outline" size="md" leftIcon={<QrCode size={16} />} onClick={handleQR}>
             Quét mã QR
           </Button>
@@ -52,99 +90,52 @@ export const BillingPage: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card padding="md">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#64748B', fontSize: 13, fontWeight: 600 }}>
-            <Wallet size={18} color="var(--color-primary)" />
+          <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
+            <Wallet size={18} className="text-brand-500" />
             <span>Số dư ví khả dụng</span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 10, color: 'var(--color-text-main)' }}>
+          <div className="text-2xl font-black mt-2.5 text-slate-900">
             {wallet?.balance_amount || '24.702 đ'}
           </div>
-          <Badge variant="success" style={{ marginTop: 8 }}>
-            Sẵn sàng gọi API
-          </Badge>
+          <Badge variant="success" style={{ marginTop: 8 }}>Sẵn sàng gọi API</Badge>
         </Card>
 
         <Card padding="md">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#64748B', fontSize: 13, fontWeight: 600 }}>
-            <CreditCard size={18} color="#10B981" />
+          <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
+            <CreditCard size={18} className="text-emerald-500" />
             <span>Tổng tiền đã nạp</span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 10, color: 'var(--color-text-main)' }}>
+          <div className="text-2xl font-black mt-2.5 text-slate-900">
             {wallet?.total_deposited || '4.331.500 đ'}
           </div>
-          <Badge variant="info" style={{ marginTop: 8 }}>
-            Tích lũy trọn đời
-          </Badge>
+          <Badge variant="info" style={{ marginTop: 8 }}>Tích lũy trọn đời</Badge>
         </Card>
 
         <Card padding="md">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#64748B', fontSize: 13, fontWeight: 600 }}>
-            <ArrowDownToLine size={18} color="#F59E0B" />
+          <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
+            <ArrowDownToLine size={18} className="text-amber-500" />
             <span>Chi phí API 7 ngày qua</span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 10, color: 'var(--color-text-main)' }}>
+          <div className="text-2xl font-black mt-2.5 text-slate-900">
             {wallet?.api_spent || '480 đ'}
           </div>
-          <Badge variant="warning" style={{ marginTop: 8 }}>
-            Mức tiêu thụ tiết kiệm
-          </Badge>
+          <Badge variant="warning" style={{ marginTop: 8 }}>Mức tiêu thụ tiết kiệm</Badge>
         </Card>
       </div>
 
-      {/* Transactions Table */}
-      <Card padding="none">
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', fontWeight: 700, fontSize: 15 }}>
-          Lịch sử giao dịch nạp tiền
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#64748B' }}>
-                <th style={{ padding: '14px 20px', fontWeight: 600 }}>MÃ GIAO DỊCH</th>
-                <th style={{ padding: '14px 20px', fontWeight: 600 }}>CỔNG THANH TOÁN</th>
-                <th style={{ padding: '14px 20px', fontWeight: 600 }}>SỐ TIỀN</th>
-                <th style={{ padding: '14px 20px', fontWeight: 600 }}>NỘI DUNG</th>
-                <th style={{ padding: '14px 20px', fontWeight: 600 }}>THỜI GIAN</th>
-                <th style={{ padding: '14px 20px', fontWeight: 600 }}>TRẠNG THÁI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#94A3B8' }}>
-                    Đang tải giao dịch...
-                  </td>
-                </tr>
-              ) : (
-                transactions.map((tx) => (
-                  <tr key={tx.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '14px 20px', fontFamily: 'monospace', fontWeight: 600 }}>
-                      {tx.id}
-                    </td>
-                    <td style={{ padding: '14px 20px', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                      {tx.gateway}
-                    </td>
-                    <td style={{ padding: '14px 20px', fontWeight: 700, color: '#10B981' }}>
-                      {tx.amount}
-                    </td>
-                    <td style={{ padding: '14px 20px', color: '#64748B' }}>
-                      {tx.description}
-                    </td>
-                    <td style={{ padding: '14px 20px', color: '#64748B' }}>
-                      {tx.created_at}
-                    </td>
-                    <td style={{ padding: '14px 20px' }}>
-                      <Badge variant="success">Hoàn thành</Badge>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* Transactions Table Section */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-base font-bold text-slate-900">Lịch sử giao dịch nạp tiền</h2>
+        <Table<TransactionItem>
+          columns={columns}
+          data={transactions}
+          loading={isLoading}
+          emptyText="Chưa có giao dịch nạp tiền nào"
+          pagination={{ pageSize: 5 }}
+        />
+      </div>
     </div>
   );
 };
