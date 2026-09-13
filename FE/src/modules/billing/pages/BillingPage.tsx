@@ -5,8 +5,30 @@ import { Button } from '../../../core/components/Button/Button';
 import { Wallet, ArrowDownToLine, QrCode, CreditCard } from 'lucide-react';
 import { useBilling } from '../hooks/useBilling';
 
+import { alert } from '../../../core/alert';
+
 export const BillingPage: React.FC = () => {
   const { wallet, transactions, isLoading } = useBilling();
+
+  const handleQR = () => {
+    alert.info(
+      'Mã QR Nạp Tiền Doanh Nghiệp',
+      'Vui lòng mở ứng dụng ngân hàng hoặc ví điện tử để quét mã thanh toán nạp tiền tự động qua VietQR/SePay.'
+    );
+  };
+
+  const handleDeposit = async () => {
+    const confirmed = await alert.confirm({
+      title: 'Xác Nhận Nạp Tiền SePay',
+      text: 'Hệ thống sẽ chuyển hướng bạn tới cổng thanh toán trực tuyến SePay để hoàn tất giao dịch nạp Credit.',
+      confirmButtonText: 'Tiến hành nạp',
+      cancelButtonText: 'Để sau',
+    });
+
+    if (confirmed) {
+      alert.toast('Đang khởi tạo phiên thanh toán...', 'info');
+    }
+  };
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -20,10 +42,10 @@ export const BillingPage: React.FC = () => {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="outline" size="md" leftIcon={<QrCode size={16} />}>
+          <Button variant="outline" size="md" leftIcon={<QrCode size={16} />} onClick={handleQR}>
             Quét mã QR
           </Button>
-          <Button variant="primary" size="md" leftIcon={<ArrowDownToLine size={16} />}>
+          <Button variant="primary" size="md" leftIcon={<ArrowDownToLine size={16} />} onClick={handleDeposit}>
             Nạp tiền SePay
           </Button>
         </div>

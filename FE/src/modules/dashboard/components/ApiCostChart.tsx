@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../../../core/components/Card/Card';
 import { MoreHorizontal, ChevronDown } from 'lucide-react';
 import type { ChartPoint } from '../types';
-import '../pages/dashboard.css';
+import '../styles/dashboard.scss';
 
 interface ApiCostChartProps {
   data: ChartPoint[];
