@@ -1,8 +1,14 @@
 import bcrypt
+import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import jwt
 from app.core.config import settings
+
+def constant_time_compare(val1: str, val2: str) -> bool:
+    """So sánh an toàn chống timing attacks khi kiểm tra API key / secrets"""
+    return hmac.compare_digest(val1.encode('utf-8'), val2.encode('utf-8'))
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Xác thực mật khẩu plain-text với mã băm bcrypt"""

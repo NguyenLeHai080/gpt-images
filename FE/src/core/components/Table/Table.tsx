@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, Inbox } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Pagination } from '../Pagination/Pagination';
+import { TableSkeleton, TableEmpty } from './TableBodyState';
 import type { TableProps, Column, SortOrder } from './Table.types';
 
 export function Table<T extends Record<string, any>>({
@@ -98,24 +99,9 @@ export function Table<T extends Record<string, any>>({
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-700">
             {loading ? (
-              Array.from({ length: 5 }).map((_, rIdx) => (
-                <tr key={rIdx} className="animate-pulse">
-                  {columns.map((col) => (
-                    <td key={col.key} className="py-4 px-4">
-                      <div className="h-4 bg-slate-200/80 rounded w-3/4" />
-                    </td>
-                  ))}
-                </tr>
-              ))
+              <TableSkeleton columns={columns} />
             ) : displayData.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="py-12 text-center text-slate-400">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Inbox size={32} className="stroke-slate-300" />
-                    <span className="font-medium text-xs text-slate-500">{emptyText}</span>
-                  </div>
-                </td>
-              </tr>
+              <TableEmpty colSpan={columns.length} emptyText={emptyText} />
             ) : (
               displayData.map((record, rIdx) => (
                 <tr

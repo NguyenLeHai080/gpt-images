@@ -44,6 +44,23 @@ class ApiClient {
 
     throw error;
   }
+  private async processResponse<T>(response: Response, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('mf_access_token');
+      }
+      const errorData = await response.json().catch(() => null);
+      const err: any = new Error(errorData?.message || `HTTP Error ${response.status}`);
+      err.status = response.status;
+      throw err;
+    }
+
+    const data: ApiResponse<T> = await response.json();
+    if (options?.successToast) {
+      alert.toast(options.successToast, 'success');
+    }
+    return data;
+  }
 
   async get<T>(endpoint: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     try {
@@ -51,19 +68,7 @@ class ApiClient {
         method: 'GET',
         headers: this.getHeaders(options?.headers),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP Error ${response.status}`);
-      }
-
-      const data: ApiResponse<T> = await response.json();
-
-      if (options?.successToast) {
-        alert.toast(options.successToast, 'success');
-      }
-
-      return data;
+      return await this.processResponse<T>(response, options);
     } catch (error: any) {
       return this.handleError(error, `GET ${endpoint}`, options);
     }
@@ -76,19 +81,7 @@ class ApiClient {
         headers: this.getHeaders(options?.headers),
         body: JSON.stringify(body),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP Error ${response.status}`);
-      }
-
-      const data: ApiResponse<T> = await response.json();
-
-      if (options?.successToast) {
-        alert.toast(options.successToast, 'success');
-      }
-
-      return data;
+      return await this.processResponse<T>(response, options);
     } catch (error: any) {
       return this.handleError(error, `POST ${endpoint}`, options);
     }
@@ -101,19 +94,7 @@ class ApiClient {
         headers: this.getHeaders(options?.headers),
         body: JSON.stringify(body),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP Error ${response.status}`);
-      }
-
-      const data: ApiResponse<T> = await response.json();
-
-      if (options?.successToast) {
-        alert.toast(options.successToast, 'success');
-      }
-
-      return data;
+      return await this.processResponse<T>(response, options);
     } catch (error: any) {
       return this.handleError(error, `PUT ${endpoint}`, options);
     }
@@ -125,19 +106,7 @@ class ApiClient {
         method: 'DELETE',
         headers: this.getHeaders(options?.headers),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP Error ${response.status}`);
-      }
-
-      const data: ApiResponse<T> = await response.json();
-
-      if (options?.successToast) {
-        alert.toast(options.successToast, 'success');
-      }
-
-      return data;
+      return await this.processResponse<T>(response, options);
     } catch (error: any) {
       return this.handleError(error, `DELETE ${endpoint}`, options);
     }

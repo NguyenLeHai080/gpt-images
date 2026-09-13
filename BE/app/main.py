@@ -4,6 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import check_db_connection
 from app.core.init_db import init_database
+from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.rate_limiter import RateLimitMiddleware
+from app.core.sanitizer import PayloadLimitMiddleware
 from app.modules.auth.api import router as auth_router
 from app.modules.dashboard.api import router as dashboard_router
 from app.modules.api_keys.api import router as api_keys_router
@@ -30,7 +33,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Middleware
+# 1. Payload Limit Shield (Max 2MB)
+app.add_middleware(PayloadLimitMiddleware)
+
+# 2. Rate Limiting Shield (Anti-DDoS / Brute-force)
+app.add_middleware(RateLimitMiddleware)
+
+# 3. OWASP Security Headers & Anti-Fingerprinting Shield
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 4. CORS Protection
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -38,6 +50,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Mount Modular Routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
