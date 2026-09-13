@@ -1,4 +1,4 @@
-﻿"""
+"""
 Security Headers Middleware - OWASP Recommended Protections
 Chống XSS, Clickjacking, MIME-sniffing, Do thám thông tin máy chủ (Fingerprinting)
 """
@@ -15,10 +15,10 @@ SECURITY_HEADERS = {
     "Permissions-Policy": "geolocation=(), camera=(), microphone=(), payment=()",
     "Content-Security-Policy": (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com data:; "
-        "img-src 'self' data: blob: https:; "
+        "img-src 'self' data: blob: https://fastapi.tiangolo.com https:; "
         "connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https:;"
     )
 }
