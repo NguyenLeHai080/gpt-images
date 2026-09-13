@@ -1,6 +1,9 @@
-from contextlib import asynccontextmanager
+﻿from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.core.database import check_db_connection
 from app.core.init_db import init_database
@@ -23,7 +26,6 @@ async def lifespan(app: FastAPI):
     else:
         print("[PostgreSQL] Warning: Could not connect to PostgreSQL. Verify credentials in .env")
     yield
-    # Shutdown
     print("[PostgreSQL] Closing connections.")
 
 app = FastAPI(
@@ -51,6 +53,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Standardized Global HTTP Error Handlers
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "code": f"HTTP_{exc.status_code}",
+            "message": exc.detail or "Lỗi yêu cầu HTTP",
+            "data": None,
+            "error": {"code": f"HTTP_{exc.status_code}", "message": exc.detail or "Lỗi yêu cầu HTTP", "details": None}
+        }
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "code": "VALIDATION_ERROR",
+            "message": "Dữ liệu yêu cầu không hợp lệ hoặc thiếu trường bắt buộc",
+            "data": None,
+            "error": {"code": "VALIDATION_ERROR", "message": "Validation error", "details": exc.errors()}
+        }
+    )
 
 # Mount Modular Routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
