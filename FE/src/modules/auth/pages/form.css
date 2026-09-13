@@ -1,0 +1,133 @@
+﻿/* Right Half: Clean White Auth Form */
+.mf-login-form-side {
+  flex: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background-color: #FFFFFF;
+}
+
+.mf-login-form-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+.mf-form-header { margin-bottom: 28px; }
+.mf-form-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-text-main);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.mf-form-subtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.mf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mf-form-alert {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+}
+.mf-form-alert--error {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.mf-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mf-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.mf-checkbox-label {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mf-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mf-forgot-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.mf-forgot-link:hover { text-decoration: underline; }
+
+.mf-btn-login-submit {
+  margin-top: 4px;
+  padding: 12px;
+  font-size: 14px;
+  border-radius: var(--radius-md);
+}
+
+.mf-register-prompt {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+.mf-register-link {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.mf-register-link:hover { text-decoration: underline; }
+
+.mf-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+.mf-divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: #E2E8F0;
+}
+.mf-divider-text {
+  font-size: 12px;
+  color: #94A3B8;
+  white-space: nowrap;
+}
+
+.mf-terms-text {
+  text-align: center;
+  font-size: 11px;
+  color: #94A3B8;
+  line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .mf-login-page { flex-direction: column; }
+  .mf-auth-branding { padding: 40px 24px; }
+  .mf-branding-title { font-size: 32px; }
+  .mf-login-form-side { padding: 32px 20px; }
+}
+
+@media (max-width: 480px) {
+  .mf-auth-branding { display: none; }
+  .mf-login-form-side { padding: 32px 16px; min-height: 100vh; }
+  .mf-form-title { font-size: 24px; }
+}

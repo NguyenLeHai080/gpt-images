@@ -1,50 +1,77 @@
-import React, { useState } from 'react';
-import { Search, Plus, Bell, BookOpen, Globe, ChevronDown, LogOut } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { Menu, Search, Plus, Bell, BookOpen, Globe, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import avatarAdmin from '../../assets/img/avatar-admin.svg';
 import './layout.css';
 
 interface HeaderProps {
+  onToggleMobileMenu?: () => void;
   onOpenCreateModal?: () => void;
   onNavigateToDocs?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenCreateModal, onNavigateToDocs }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onToggleMobileMenu,
+  onOpenCreateModal,
+  onNavigateToDocs,
+}) => {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   return (
     <header className="mf-header">
-      {/* Search Input Bar */}
-      <div className="mf-header__search-container">
-        <Search size={16} className="mf-search-icon" />
-        <input
-          type="text"
-          placeholder="Tìm nhân viên, dự án, hợp đồng..."
-          className="mf-search-input"
-        />
-        <kbd className="mf-search-kbd">⌘ K</kbd>
+      {/* Left: Mobile Menu Toggle & Search */}
+      <div className="mf-header__left">
+        <button
+          className="mf-header-menu-btn"
+          onClick={onToggleMobileMenu}
+          title="Mở menu điều hướng"
+          aria-label="Toggle navigation"
+        >
+          <Menu size={22} />
+        </button>
+
+        {/* Search Input Bar */}
+        <div className={`mf-header__search-container ${showMobileSearch ? 'mf-header__search--visible' : ''}`}>
+          <Search size={16} className="mf-search-icon" />
+          <input
+            type="text"
+            placeholder="Tìm nhân viên, dự án, hợp đồng..."
+            className="mf-search-input"
+          />
+          <kbd className="mf-search-kbd">⌘ K</kbd>
+        </div>
       </div>
 
       {/* Right Controls */}
       <div className="mf-header__actions">
-        {/* Language Selector */}
+        {/* Mobile Search Toggle Button */}
+        <button
+          className="mf-icon-action-btn mf-mobile-search-toggle"
+          onClick={() => setShowMobileSearch(!showMobileSearch)}
+          title="Tìm kiếm"
+        >
+          <Search size={18} />
+        </button>
+
+        {/* Language Selector (Hidden on mobile) */}
         <button className="mf-header-btn mf-header-btn--lang">
           <Globe size={15} />
-          <span>Tiếng Việt</span>
+          <span className="mf-btn-text">Tiếng Việt</span>
           <ChevronDown size={13} />
         </button>
 
         {/* Create New Button */}
         <button className="mf-btn-create" onClick={onOpenCreateModal}>
           <Plus size={16} />
-          <span>Tạo mới</span>
-          <ChevronDown size={14} className="mf-chevron-dim" />
+          <span className="mf-btn-text">Tạo mới</span>
+          <ChevronDown size={14} className="mf-chevron-dim mf-btn-text" />
         </button>
 
-        {/* Documentation / Book icon */}
+        {/* Documentation icon */}
         <button
-          className="mf-icon-action-btn"
+          className="mf-icon-action-btn mf-header-docs-btn"
           title="Tài liệu hướng dẫn (DOCS)"
           onClick={onNavigateToDocs}
         >
