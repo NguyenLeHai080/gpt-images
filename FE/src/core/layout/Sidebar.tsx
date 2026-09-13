@@ -12,6 +12,7 @@ import {
   Wrench,
   Sparkles
 } from 'lucide-react';
+import logoSidebar from '../../assets/img/logo-sidebar.svg';
 import './layout.css';
 
 interface SidebarProps {
@@ -25,13 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
     <aside className="mf-sidebar">
       {/* Brand Logo */}
       <div className="mf-sidebar__brand">
-        <div className="mf-brand-badge">
-          <span>MI</span>
-        </div>
-        <div className="mf-brand-info">
-          <div className="mf-brand-name">MintForge</div>
-          <div className="mf-brand-suite">BUSINESS SUITE</div>
-        </div>
+        <img src={logoSidebar} alt="MintForge Business Suite" className="h-9 w-auto object-contain" />
       </div>
 
       {/* Nav List */}
