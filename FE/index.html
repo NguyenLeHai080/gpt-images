@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPT-Images - Sáng Tạo Ảnh AI Đỉnh Cao</title>
+  <meta name="description" content="Nền tảng tạo hình ảnh nghệ thuật thông minh với công nghệ Generative AI tiên tiến">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="header">
+    <div class="container nav-container">
+      <div class="logo">
+        <span class="logo-icon">✨</span>
+        <span class="logo-text">GPT-Images</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Tính năng</a>
+        <a href="#gallery">Khám phá</a>
+        <a href="#pricing">Bảng giá</a>
+        <a href="../DOCS/README.md" class="docs-link" target="_blank">Tài liệu (DOCS)</a>
+      </nav>
+      <div class="auth-buttons">
+        <button class="btn btn-secondary" id="btn-login">Đăng nhập</button>
+        <button class="btn btn-primary" id="btn-register">Bắt đầu miễn phí</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="container hero-content">
+        <div class="badge">🔥 Công nghệ AI Thế hệ Mới 2026</div>
+        <h1 class="hero-title">Biến Mọi Ý Tưởng Thành <span class="gradient-text">Kiệt Tác Nghệ Thuật</span></h1>
+        <p class="hero-desc">
+          Nhập prompt tự nhiên, hệ thống sẽ tự động tổng hợp hình ảnh sắc nét, nghệ thuật và độ phân giải cao chỉ trong vài giây.
+        </p>
+
+        <!-- Prompt Generator Input Box -->
+        <div class="generator-box" id="generator-box">
+          <div class="input-wrapper">
+            <span class="magic-icon">🪄</span>
+            <input type="text" id="prompt-input" placeholder="Mô tả bức ảnh bạn muốn tạo (VD: Phi hành gia cyberpunk giữa rừng hoa anh đào neon)..." />
+          </div>
+          <button class="btn btn-generate" id="btn-generate">
+            <span>Tạo ảnh</span>
+            <span class="credit-tag">1 Credit</span>
+          </button>
+        </div>
+
+        <!-- Suggestion Tags -->
+        <div class="suggestions">
+          <span class="sug-label">Gợi ý:</span>
+          <button class="tag">Cyberpunk City 4K</button>
+          <button class="tag">Anime Studio Ghibli Style</button>
+          <button class="tag">Photorealistic Golden Hour Portrait</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <p>© 2026 GPT-Images Platform. Tuân thủ chuẩn Gitflow & Conventional Commits.</p>
+    </div>
+  </footer>
+</body>
+</html>
