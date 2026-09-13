@@ -1,0 +1,37 @@
+name: "⚡ Spike / Research Task"
+description: "Nhiệm vụ nghiên cứu kỹ thuật hoặc thử nghiệm POC có giới hạn thời gian (Timebox)"
+title: "[SPIKE]: <Chủ đề nghiên cứu / Thử nghiệm>"
+labels: ["spike", "research"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### ⚡ Spike Task trong Agile Scrum
+        Spike là hoạt động nghiên cứu có thời hạn nhằm trả lời các câu hỏi kỹ thuật chưa rõ hoặc đánh giá rủi ro của công nghệ mới trước khi ước lượng Story Points cho User Story chính thức.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Câu hỏi kỹ thuật hoặc Vấn đề cần làm sáng tỏ"
+      placeholder: "Ví dụ: Đánh giá xem Cloudflare R2 API có đáp ứng tốc độ upload và chi phí tốt hơn AWS S3 hay không."
+    validations:
+      required: true
+  - type: dropdown
+    id: timebox
+    attributes:
+      label: "Giới Hạn Thời Gian Nghiên Cứu (Timebox)"
+      options:
+        - "0.5 Ngày (4 Giờ làm việc)"
+        - "1 Ngày (8 Giờ làm việc)"
+        - "2 Ngày (16 Giờ làm việc - Tối đa)"
+    validations:
+      required: true
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: "Đầu Ra Kỳ Vọng (Expected Deliverables)"
+      placeholder: |
+        - Tài liệu đánh giá kiến trúc kỹ thuật trong DOCS/03
+        - Đoạn mã mẫu thử nghiệm (Proof of Concept - POC)
+        - Đề xuất giải pháp và ước lượng Story Points cho User Story liên quan
+    validations:
+      required: true
