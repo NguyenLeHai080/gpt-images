@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useAuth } from '../../../core/hooks/useAuth';
 import { alert } from '../../../core/alert';
 import type { LoginCredentials } from '../types';
@@ -7,7 +7,7 @@ export const useAuthForm = (onSuccess?: () => void) => {
   const { login, isLoading } = useAuth();
   const [formData, setFormData] = useState<LoginCredentials>({
     email: 'admin@mintforge.vn',
-    password: '••••••••',
+    password: '',
     linkApiKey: false,
     rememberMe: true,
   });
@@ -26,21 +26,22 @@ export const useAuthForm = (onSuccess?: () => void) => {
       alert.warning('Thông tin chưa đầy đủ', 'Vui lòng nhập địa chỉ email để tiếp tục.');
       return;
     }
+    if (!formData.password) {
+      setError('Vui lòng nhập mật khẩu');
+      alert.warning('Thông tin chưa đầy đủ', 'Vui lòng nhập mật khẩu tài khoản.');
+      return;
+    }
 
     try {
       const ok = await login(formData.email, formData.password, formData.linkApiKey);
       if (ok) {
         alert.toast('Đăng nhập thành công! Chào mừng trở lại.', 'success');
         if (onSuccess) onSuccess();
-      } else {
-        const errMsg = 'Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin.';
-        setError(errMsg);
-        alert.error('Đăng nhập thất bại', errMsg);
       }
     } catch (err: any) {
-      const errMsg = err.message || 'Đã có lỗi xảy ra khi kết nối máy chủ';
+      const errMsg = err.message || 'Email hoặc mật khẩu không chính xác';
       setError(errMsg);
-      alert.error('Lỗi kết nối', errMsg);
+      alert.error('Đăng nhập thất bại', errMsg);
     }
   };
 
