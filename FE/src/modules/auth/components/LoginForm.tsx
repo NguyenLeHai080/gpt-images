@@ -3,6 +3,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../../core/components/Button/Button';
 import { Input } from '../../../core/components/Input/Input';
 import { useAuthForm } from '../hooks/useAuthForm';
+import { alert } from '../../../core/alert';
 import '../pages/login.css';
 
 interface LoginFormProps {
@@ -88,9 +89,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               Ghi nhớ đăng nhập
             </label>
           </div>
-          <a href="#forgot" className="mf-forgot-link">
+          <button
+            type="button"
+            onClick={() => alert.info('Khôi phục mật khẩu', 'Vui lòng liên hệ quản trị viên hệ thống để cấp lại mật khẩu truy cập.')}
+            className="mf-forgot-link"
+          >
             Quên mật khẩu?
-          </a>
+          </button>
         </div>
 
         {/* Submit Button */}
@@ -108,9 +113,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         {/* Registration Link */}
         <div className="mf-register-prompt">
           <span>Chưa có tài khoản hoặc chưa có key? </span>
-          <a href="#register" className="mf-register-link">
+          <button
+            type="button"
+            onClick={() => alert.info('Đăng ký tài khoản', 'Cổng đăng ký doanh nghiệp đang mở theo diện mời nội bộ. Vui lòng liên hệ support@mintforge.vn.')}
+            className="mf-register-link inline font-semibold"
+          >
             Đăng ký tài khoản mới
-          </a>
+          </button>
         </div>
 
         {/* Social / SSO Divider */}
