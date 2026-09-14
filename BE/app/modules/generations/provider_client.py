@@ -184,17 +184,20 @@ class ProviderClient:
         reference: Optional[str] = None,
         references: Optional[List[str]] = None,
         count: int = 1,
-        execution_mode: str = "sync"
+        execution_mode: str = "sync",
+        provider_key: Optional[str] = None
     ) -> Tuple[int, Dict[str, Any], int]:
         """
-        Gửi yêu cầu tạo ảnh tới nhà cung cấp upstream qua Master API Key
+        Gửi yêu cầu tạo ảnh tới nhà cung cấp upstream qua Master API Key hoặc Provider Key riêng của tài khoản
         Hỗ trợ resolution (1k, 2k, 4k), quality (low, medium, high), reference (URL) và references (danh sách URL)
         Trả về (status_code, response_dict, latency_ms)
         """
         start_time = time.time()
         
-        # Đảm bảo có API Key
-        if not self.raw_api_key:
+        active_key = (provider_key or "").strip() or self.raw_api_key
+
+        # Đảm bảo có API Key nếu không có provider_key truyền vào
+        if not active_key:
             token = self.ensure_auth()
             # Tạo hoặc lấy key
             status, keys_resp = self._make_request(
@@ -205,6 +208,7 @@ class ProviderClient:
             )
             if status in (200, 201) and "raw_key" in keys_resp:
                 self.raw_api_key = keys_resp["raw_key"]
+                active_key = self.raw_api_key
 
         # Chuẩn hóa resolution, quality và aspectRatio
         mapped_ar, mapped_res = self.normalize_resolution_and_aspect_ratio(aspect_ratio, resolution)
@@ -249,7 +253,7 @@ class ProviderClient:
             payload["reference"] = resolved_refs[0]
 
         headers = {
-            "Authorization": f"Bearer {self.raw_api_key}"
+            "Authorization": f"Bearer {active_key}"
         }
 
         status, resp = self._make_request(
@@ -262,5 +266,6 @@ class ProviderClient:
 
         latency_ms = int((time.time() - start_time) * 1000)
         return status, resp, latency_ms
+
 
 provider_client = ProviderClient()

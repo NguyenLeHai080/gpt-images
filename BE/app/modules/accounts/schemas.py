@@ -10,6 +10,8 @@ class UserAccountResponse(BaseModel):
     company_name: str
     avatar_url: Optional[str] = None
     is_active: bool
+    has_provider_key: bool = False
+    provider_key_masked: Optional[str] = None
     created_at: Optional[datetime] = None
 
     class Config:
@@ -22,6 +24,7 @@ class CreateUserRequest(BaseModel):
     role: str = "MEMBER"
     company_name: str = "MintForge Business Suite"
     is_active: bool = True
+    provider_api_key: Optional[str] = None
 
 class UpdateUserRequest(BaseModel):
     full_name: Optional[str] = None
@@ -30,6 +33,10 @@ class UpdateUserRequest(BaseModel):
     company_name: Optional[str] = None
     password: Optional[str] = None
     is_active: Optional[bool] = None
+    provider_api_key: Optional[str] = None
+
+class UpdateProviderKeyRequest(BaseModel):
+    provider_api_key: str
 
 class UpdateRoleRequest(BaseModel):
     role: str
@@ -39,6 +46,7 @@ class ToggleStatusRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     new_password: str
+
 
 class AccountStatsResponse(BaseModel):
     total_users: int

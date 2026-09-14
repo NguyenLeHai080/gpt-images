@@ -1,24 +1,47 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, Depends
+from sqlalchemy.orm import Session
+from app.core.database import get_db
 from app.core.responses import success_response
+from app.core.security import decode_access_token
+from app.modules.auth.models import User
 from app.modules.billing.schemas import SepayWebhookPayload
 from app.modules.billing.services import billing_service
 
 router = APIRouter(prefix="/billing", tags=["Billing & Wallet"])
 
+def get_current_user_from_request(request: Request, db: Session) -> User:
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload and "sub" in payload:
+            user = db.query(User).filter(User.email == payload["sub"]).first()
+            if user:
+                return user
+    return db.query(User).first()
+
 @router.get("/wallet")
-def get_wallet():
-    wallet = billing_service.get_wallet()
+def get_wallet(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user_from_request(request, db)
+    user_id = user.id if user else None
+    wallet = billing_service.get_wallet(user_id=user_id, db=db)
     return success_response(wallet.model_dump(), "Lấy thông tin ví thành công")
 
 @router.get("/transactions")
-def get_transactions():
-    transactions = billing_service.get_transactions()
+def get_transactions(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user_from_request(request, db)
+    user_id = user.id if user else None
+    is_admin = user.role in ("SUPER_ADMIN", "ADMIN") if user else True
+    transactions = billing_service.get_transactions(user_id=user_id, is_admin=is_admin, db=db)
     return success_response(transactions, "Lấy lịch sử giao dịch thành công")
 
 @router.get("/banking")
-def get_bank_accounts():
-    accounts = billing_service.get_bank_accounts()
+def get_bank_accounts(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user_from_request(request, db)
+    user_id = user.id if user else "user_admin_01"
+    accounts = billing_service.get_bank_accounts(user_id=user_id)
     return success_response([a.model_dump() for a in accounts], "Lấy danh sách tài khoản ngân hàng thành công")
+
 
 @router.get("/sepay")
 def get_sepay_transactions():

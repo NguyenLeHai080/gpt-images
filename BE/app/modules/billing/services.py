@@ -16,16 +16,37 @@ from app.modules.billing.schemas import (
     CreditConfigItem,
 )
 
+import urllib.parse
+
 class BillingService:
     @staticmethod
-    def get_wallet(db: Optional[Session] = None) -> WalletSummary:
+    def get_wallet(user_id: Optional[str] = None, db: Optional[Session] = None) -> WalletSummary:
         close_session = False
         if db is None:
             db = SessionLocal()
             close_session = True
 
         try:
-            record = db.query(Wallet).first()
+            record = None
+            if user_id:
+                record = db.query(Wallet).filter(Wallet.user_id == user_id).first()
+            
+            if not record and user_id:
+                # Tự động khởi tạo ví cho user nếu chưa có
+                record = Wallet(
+                    id=f"wallet_{uuid.uuid4().hex[:12]}",
+                    user_id=user_id,
+                    balance=0.0,
+                    total_deposited=0.0,
+                    api_spent=0.0,
+                    currency="VND"
+                )
+                db.add(record)
+                db.commit()
+                db.refresh(record)
+            elif not record:
+                record = db.query(Wallet).first()
+
             if not record:
                 return WalletSummary()
 
@@ -45,14 +66,22 @@ class BillingService:
                 db.close()
 
     @staticmethod
-    def get_transactions(db: Optional[Session] = None) -> List[TransactionItem]:
+    def get_transactions(user_id: Optional[str] = None, is_admin: bool = False, db: Optional[Session] = None) -> List[TransactionItem]:
         close_session = False
         if db is None:
             db = SessionLocal()
             close_session = True
 
         try:
-            records = db.query(Transaction).order_by(Transaction.created_at.desc()).all()
+            query = db.query(Transaction)
+            if not is_admin and user_id:
+                wallet = db.query(Wallet).filter(Wallet.user_id == user_id).first()
+                if wallet:
+                    query = query.filter(Transaction.wallet_id == wallet.id)
+                else:
+                    return []
+
+            records = query.order_by(Transaction.created_at.desc()).all()
             return [
                 TransactionItem(
                     id=t.id,
@@ -69,20 +98,28 @@ class BillingService:
                 db.close()
 
     @staticmethod
-    def get_bank_accounts() -> List[BankAccountItem]:
+    def get_bank_accounts(user_id: str = "user_admin_01") -> List[BankAccountItem]:
+        memo = f"GPT {user_id}"
+        account_number = "109873538727"
+        account_holder = "NGUYEN LE HAI"
+        qr_url = f"https://img.vietqr.io/image/ICB-{account_number}-compact2.png?addInfo={urllib.parse.quote(memo)}&accountName={urllib.parse.quote(account_holder)}"
+
         return [
             BankAccountItem(
                 id="bank_01",
                 bank_name="Ngân Hàng TMCP Công Thương Việt Nam (VietinBank)",
                 bank_code="ICB",
-                account_number="109873538727",
-                account_holder="NGUYEN LE HAI",
+                account_number=account_number,
+                account_holder=account_holder,
                 branch="Chi nhánh VietinBank",
                 qr_template="compact2",
                 is_primary=True,
-                is_active=True
+                is_active=True,
+                transfer_memo=memo,
+                qr_url=qr_url
             )
         ]
+
 
     @staticmethod
     def get_sepay_transactions(db: Optional[Session] = None) -> List[SepayTransactionItem]:
@@ -215,28 +252,39 @@ class BillingService:
             # 3. Tìm User và Wallet tương ứng
             target_user = db.query(User).filter(
                 (User.id == raw_user_token) |
-                (User.email.ilike(f"{raw_user_token}%"))
+                (User.email.ilike(f"{raw_user_token}%")) |
+                (User.full_name.ilike(f"%{raw_user_token}%"))
             ).first()
 
             wallet = None
             if target_user:
                 wallet = db.query(Wallet).filter(Wallet.user_id == target_user.id).first()
-
-            # Fallback nếu test hoặc nạp vào ví admin mặc định
-            if not wallet:
+                if not wallet:
+                    wallet = Wallet(
+                        id=f"wallet_{uuid.uuid4().hex[:12]}",
+                        user_id=target_user.id,
+                        balance=0.0,
+                        total_deposited=0.0,
+                        api_spent=0.0,
+                        currency="VND"
+                    )
+                    db.add(wallet)
+                    db.flush()
+            else:
+                # Fallback nếu test admin hoặc nạp chung
                 wallet = db.query(Wallet).first()
+                if not wallet:
+                    wallet = Wallet(
+                        id="wallet_default",
+                        user_id=None,
+                        balance=0.0,
+                        total_deposited=0.0,
+                        api_spent=0.0,
+                        currency="VND"
+                    )
+                    db.add(wallet)
+                    db.flush()
 
-            if not wallet:
-                wallet = Wallet(
-                    id="wallet_default",
-                    user_id=target_user.id if target_user else None,
-                    balance=0.0,
-                    total_deposited=0.0,
-                    api_spent=0.0,
-                    currency="VND"
-                )
-                db.add(wallet)
-                db.flush()
 
             # 4. Cộng số dư và tổng nạp vào ví
             wallet.balance += amount

@@ -14,5 +14,7 @@ class User(Base):
     company_name = Column(String, default="MintForge Business Suite", nullable=False)
     avatar_url = Column(String, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    provider_api_key = Column(String, nullable=True)  # Upstream Provider Key from tokenx.leeh.dev (cost 120d/image)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+

@@ -148,6 +148,23 @@ export const useAccounts = () => {
     }
   };
 
+  const updateProviderKey = async (userId: string, providerApiKey: string): Promise<boolean> => {
+    try {
+      const res = await apiClient.patch(`/accounts/${userId}/provider-key`, {
+        provider_api_key: providerApiKey,
+      });
+      if (res.success) {
+        alert.toast('Cập nhật API Key nhà cung cấp (120đ/ảnh) thành công', 'success');
+        fetchAccounts();
+        return true;
+      }
+      throw new Error(res.message || 'Lỗi khi cập nhật Provider Key');
+    } catch (err: any) {
+      alert.toast(err?.message || 'Không thể cập nhật Provider Key', 'error');
+      return false;
+    }
+  };
+
   return {
     users,
     stats,
@@ -160,5 +177,7 @@ export const useAccounts = () => {
     updateRole,
     toggleStatus,
     deleteAccount,
+    updateProviderKey,
   };
 };
+

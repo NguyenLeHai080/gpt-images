@@ -24,6 +24,7 @@ import { CreateAccountModal } from '../components/CreateAccountModal';
 import { EditAccountModal } from '../components/EditAccountModal';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { ChangeRoleModal } from '../components/ChangeRoleModal';
+import { SetProviderKeyModal } from '../components/SetProviderKeyModal';
 import type { UserAccountItem, UserRole, UpdateUserData } from '../types';
 
 export const AccountsPage: React.FC = () => {
@@ -38,6 +39,7 @@ export const AccountsPage: React.FC = () => {
     updateRole,
     toggleStatus,
     deleteAccount,
+    updateProviderKey,
   } = useAccounts();
 
   // Permissions check
@@ -54,7 +56,9 @@ export const AccountsPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isProviderKeyModalOpen, setIsProviderKeyModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserAccountItem | null>(null);
+
 
   // Filtered accounts
   const filteredUsers = useMemo(() => {
@@ -90,6 +94,11 @@ export const AccountsPage: React.FC = () => {
   const handleOpenRoleModal = (user: UserAccountItem) => {
     setSelectedUser(user);
     setIsRoleModalOpen(true);
+  };
+
+  const handleOpenProviderKeyModal = (user: UserAccountItem) => {
+    setSelectedUser(user);
+    setIsProviderKeyModalOpen(true);
   };
 
   // Toggle Status
@@ -178,6 +187,25 @@ export const AccountsPage: React.FC = () => {
           default:
             return <Badge variant="success">Member</Badge>;
         }
+      },
+    },
+    {
+      key: 'provider_key',
+      title: 'API Key NCC (120đ)',
+      render: (_, record) => {
+        if (record.has_provider_key) {
+          return (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+              <KeyRound size={11} className="text-blue-500" />
+              <span>{record.provider_key_masked || 'Đã gán Key'}</span>
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200">
+            Dùng Key Hệ Thống
+          </span>
+        );
       },
     },
     {
@@ -287,7 +315,19 @@ export const AccountsPage: React.FC = () => {
               </button>
             )}
 
-            {/* 5. Xóa Tài Khoản */}
+            {/* 5. Gán Provider Key Nhà Cung Cấp */}
+            {(isSuperAdmin || isAdmin) && (
+              <button
+                type="button"
+                onClick={() => handleOpenProviderKeyModal(record)}
+                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Gán API Key Nhà Cung Cấp (120đ/ảnh)"
+              >
+                <KeyRound size={14} className="text-blue-500" />
+              </button>
+            )}
+
+            {/* 6. Xóa Tài Khoản */}
             {canDeleteThisUser && (
               <button
                 type="button"
@@ -300,6 +340,7 @@ export const AccountsPage: React.FC = () => {
             )}
           </div>
         );
+
       },
     },
   ];
@@ -426,7 +467,19 @@ export const AccountsPage: React.FC = () => {
         user={selectedUser}
         onSave={(userId: string, role: UserRole) => updateRole(userId, role)}
       />
+
+      {/* 5. Modal: Gán API Key Nhà Cung Cấp */}
+      <SetProviderKeyModal
+        isOpen={isProviderKeyModalOpen}
+        onClose={() => {
+          setIsProviderKeyModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSave={(userId: string, key: string) => updateProviderKey(userId, key)}
+      />
     </div>
   );
 };
 export default AccountsPage;
+

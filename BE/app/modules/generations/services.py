@@ -203,7 +203,8 @@ class GenerationService:
         db.commit()
         db.refresh(job)
 
-        # 3. Gọi upstream tới NCC
+        # 3. Gọi upstream tới NCC (sử dụng Provider Key riêng của User nếu có, ngược lại dùng System Master Key)
+        user_provider_key = user.provider_api_key if user and user.provider_api_key else None
         status_code, resp_data, latency_ms = provider_client.generate_image_upstream(
             prompt=request.prompt,
             model=request.model,
@@ -213,10 +214,12 @@ class GenerationService:
             reference=job.reference,
             references=ref_list if ref_list else None,
             count=request.count,
-            execution_mode=request.executionMode
+            execution_mode=request.executionMode,
+            provider_key=user_provider_key
         )
 
         job.latency_ms = latency_ms
+
 
         # 4. Phân tích kết quả upstream
         if status_code in (200, 201) and "error" not in resp_data:

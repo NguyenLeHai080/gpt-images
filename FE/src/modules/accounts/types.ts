@@ -8,8 +8,11 @@ export interface UserAccountItem {
   company_name: string;
   avatar_url?: string | null;
   is_active: boolean;
+  has_provider_key?: boolean;
+  provider_key_masked?: string | null;
   created_at?: string;
 }
+
 
 export interface AccountStats {
   total_users: number;

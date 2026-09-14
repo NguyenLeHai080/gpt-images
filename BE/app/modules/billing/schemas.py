@@ -29,6 +29,9 @@ class BankAccountItem(BaseModel):
     qr_template: str = "compact2"
     is_primary: bool = True
     is_active: bool = True
+    transfer_memo: Optional[str] = "GPT"
+    qr_url: Optional[str] = None
+
 
 class SepayTransactionItem(BaseModel):
     id: str

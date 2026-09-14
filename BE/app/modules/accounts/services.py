@@ -84,6 +84,8 @@ class AccountsService:
                     company_name=u.company_name,
                     avatar_url=u.avatar_url,
                     is_active=u.is_active,
+                    has_provider_key=bool(u.provider_api_key),
+                    provider_key_masked=(u.provider_api_key[:8] + "••••••••") if u.provider_api_key else None,
                     created_at=u.created_at
                 )
                 for u in users
@@ -102,7 +104,7 @@ class AccountsService:
             close_session = True
 
         try:
-            existing = db.query(User).filter(User.email == payload.email.strip()).first()
+            existing = db.query(User).filter(User.email == payload.email.strip().lower()).first()
             if existing:
                 return None
 
@@ -113,7 +115,8 @@ class AccountsService:
                 full_name=payload.full_name.strip(),
                 role=payload.role.upper(),
                 company_name=payload.company_name.strip(),
-                is_active=payload.is_active
+                is_active=payload.is_active,
+                provider_api_key=payload.provider_api_key.strip() if payload.provider_api_key else None
             )
             db.add(new_user)
             db.commit()
@@ -127,8 +130,11 @@ class AccountsService:
                 company_name=new_user.company_name,
                 avatar_url=new_user.avatar_url,
                 is_active=new_user.is_active,
+                has_provider_key=bool(new_user.provider_api_key),
+                provider_key_masked=(new_user.provider_api_key[:8] + "••••••••") if new_user.provider_api_key else None,
                 created_at=new_user.created_at
             )
+
         finally:
             if close_session:
                 db.close()
@@ -246,6 +252,8 @@ class AccountsService:
                 user.is_active = payload.is_active
             if payload.password:
                 user.hashed_password = get_password_hash(payload.password)
+            if payload.provider_api_key is not None:
+                user.provider_api_key = payload.provider_api_key.strip() if payload.provider_api_key else None
 
             db.commit()
             db.refresh(user)
@@ -258,6 +266,40 @@ class AccountsService:
                 company_name=user.company_name,
                 avatar_url=user.avatar_url,
                 is_active=user.is_active,
+                has_provider_key=bool(user.provider_api_key),
+                provider_key_masked=(user.provider_api_key[:8] + "••••••••") if user.provider_api_key else None,
+                created_at=user.created_at
+            )
+        finally:
+            if close_session:
+                db.close()
+
+    @staticmethod
+    def update_provider_key(user_id: str, provider_key: str, db: Optional[Session] = None) -> Optional[UserAccountResponse]:
+        close_session = False
+        if db is None:
+            db = SessionLocal()
+            close_session = True
+
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return None
+
+            user.provider_api_key = provider_key.strip() if provider_key else None
+            db.commit()
+            db.refresh(user)
+
+            return UserAccountResponse(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role,
+                company_name=user.company_name,
+                avatar_url=user.avatar_url,
+                is_active=user.is_active,
+                has_provider_key=bool(user.provider_api_key),
+                provider_key_masked=(user.provider_api_key[:8] + "••••••••") if user.provider_api_key else None,
                 created_at=user.created_at
             )
         finally:
@@ -266,6 +308,7 @@ class AccountsService:
 
     @staticmethod
     def change_password(user_id: str, new_password: str, db: Optional[Session] = None) -> bool:
+
         close_session = False
         if db is None:
             db = SessionLocal()

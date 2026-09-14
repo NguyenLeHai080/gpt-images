@@ -51,25 +51,12 @@ export const App: React.FC = () => {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
-                        path="api-keys"
-                        element={
-                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN', 'DEVELOPER']}>
-                            <ApiKeysPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                      <Route path="api-keys" element={<ApiKeysPage />} />
                       <Route path="api-docs" element={<ApiDocsPage />} />
                       <Route path="billing" element={<BillingPage />} />
                       <Route path="wallet" element={<BillingPage />} />
-                      <Route
-                        path="banking"
-                        element={
-                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
-                            <BankingConfigPage />
-                          </ProtectedRoute>
-                        }
-                      />
+                      <Route path="banking" element={<BankingConfigPage />} />
+
                       <Route
                         path="credit-config"
                         element={

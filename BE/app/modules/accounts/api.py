@@ -77,9 +77,18 @@ def toggle_user_status(user_id: str, payload: ToggleStatusRequest):
     except ValueError as e:
         return error_response("VALIDATION_ERROR", str(e))
 
+@router.patch("/{user_id}/provider-key")
+def update_provider_key(user_id: str, payload: dict):
+    provider_key = payload.get("provider_api_key", "").strip()
+    user = accounts_service.update_provider_key(user_id, provider_key)
+    if not user:
+        return error_response("NOT_FOUND", "Không tìm thấy người dùng")
+    return success_response(user.model_dump(), "Cập nhật Provider API Key cho tài khoản thành công")
+
 @router.delete("/{user_id}")
 def delete_account(user_id: str):
     success = accounts_service.delete_user(user_id)
     if not success:
         return error_response("DELETE_FAILED", "Không thể xóa tài khoản này (hoặc tài khoản là Super Admin gốc)")
     return success_response({"deleted_id": user_id}, "Đã xóa tài khoản thành công")
+
