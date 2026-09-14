@@ -2,9 +2,9 @@ from typing import List, Optional, Any
 from pydantic import BaseModel
 
 class WalletSummary(BaseModel):
-    balance_amount: str = "24.702 đ"
-    total_deposited: str = "4.331.500 đ"
-    api_spent: str = "480 đ"
+    balance_amount: str = "0 đ"
+    total_deposited: str = "0 đ"
+    api_spent: str = "0 đ"
     currency: str = "VND"
 
 class TransactionItem(BaseModel):

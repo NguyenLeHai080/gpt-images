@@ -116,9 +116,9 @@ def init_database() -> None:
             wallet = Wallet(
                 id="wallet_admin_01",
                 user_id=admin_user.id,
-                balance=24702.0,
-                total_deposited=4331500.0,
-                api_spent=480.0,
+                balance=0.0,
+                total_deposited=0.0,
+                api_spent=0.0,
                 currency="VND",
             )
             db.add(wallet)

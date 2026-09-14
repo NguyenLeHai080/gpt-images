@@ -164,7 +164,7 @@ export const BillingPage: React.FC = () => {
             <span>Số dư ví khả dụng</span>
           </div>
           <div className="text-2xl font-black mt-2.5 text-slate-900">
-            {wallet?.balance_amount || '24.702 đ'}
+            {wallet?.balance_amount || '0 đ'}
           </div>
           <Badge variant="success" style={{ marginTop: 8 }}>Sẵn sàng gọi API</Badge>
         </Card>
@@ -175,7 +175,7 @@ export const BillingPage: React.FC = () => {
             <span>Tổng tiền đã nạp</span>
           </div>
           <div className="text-2xl font-black mt-2.5 text-slate-900">
-            {wallet?.total_deposited || '4.331.500 đ'}
+            {wallet?.total_deposited || '0 đ'}
           </div>
           <Badge variant="info" style={{ marginTop: 8 }}>Tích lũy trọn đời</Badge>
         </Card>
@@ -186,7 +186,7 @@ export const BillingPage: React.FC = () => {
             <span>Chi phí API 7 ngày qua</span>
           </div>
           <div className="text-2xl font-black mt-2.5 text-slate-900">
-            {wallet?.api_spent || '480 đ'}
+            {wallet?.api_spent || '0 đ'}
           </div>
           <Badge variant="warning" style={{ marginTop: 8 }}>Mức tiêu thụ tiết kiệm</Badge>
         </Card>
