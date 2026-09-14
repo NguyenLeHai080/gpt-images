@@ -99,8 +99,9 @@ class BillingService:
 
     @staticmethod
     def get_bank_accounts(user_id: str = "user_admin_01") -> List[BankAccountItem]:
-        memo = f"GPT {user_id}"
+        memo = f"SEVQR GPT {user_id}"
         account_number = "109873538727"
+        account_holder = "NGUYEN LE HAI"
         qr_url = f"https://vietqr.app/img?bank=VietinBank&acc={account_number}&template=compact&des={urllib.parse.quote(memo)}&showinfo=true&holder={urllib.parse.quote(account_holder)}"
 
         return [
@@ -191,8 +192,8 @@ class BillingService:
                 }
 
             # 2. Phân luồng theo mã tiền tố của gpt-images:
-            # Hỗ trợ: GPT <USER_ID>, GPT<USER_ID>, MF NAP <USER_ID>, GPTIMG <USER_ID>, hoặc trực tiếp ID/email
-            pattern = r'(?:GPT|MF\s*NAP|GPTIMG)\s*([a-zA-Z0-9_\-]+)'
+            # Hỗ trợ: SEVQR GPT <USER_ID>, SEVQR <USER_ID>, GPT <USER_ID>, MF NAP <USER_ID>
+            pattern = r'(?:SEVQR\s*GPT|SEVQR\s*GPTIMG|SEVQR|GPT|MF\s*NAP|GPTIMG)\s*([a-zA-Z0-9_\-]+)'
             match = re.search(pattern, content, re.IGNORECASE)
 
             target_user = None

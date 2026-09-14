@@ -33,7 +33,7 @@ export const BankingConfigPage: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const transferMemo = `GPT ${user?.id || 'user_admin_01'}`;
+  const transferMemo = selectedBank?.transfer_memo || `SEVQR GPT ${user?.id || 'user_admin_01'}`;
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
