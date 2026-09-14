@@ -101,8 +101,7 @@ class BillingService:
     def get_bank_accounts(user_id: str = "user_admin_01") -> List[BankAccountItem]:
         memo = f"GPT {user_id}"
         account_number = "109873538727"
-        account_holder = "NGUYEN LE HAI"
-        qr_url = f"https://img.vietqr.io/image/ICB-{account_number}-compact2.png?addInfo={urllib.parse.quote(memo)}&accountName={urllib.parse.quote(account_holder)}"
+        qr_url = f"https://vietqr.app/img?bank=VietinBank&acc={account_number}&template=compact&des={urllib.parse.quote(memo)}&showinfo=true&holder={urllib.parse.quote(account_holder)}"
 
         return [
             BankAccountItem(

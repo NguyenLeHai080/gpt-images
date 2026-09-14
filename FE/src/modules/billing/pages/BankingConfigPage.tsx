@@ -43,11 +43,13 @@ export const BankingConfigPage: React.FC = () => {
   };
 
   // URL VietQR API
-  const qrUrl = selectedBank
-    ? `https://img.vietqr.io/image/${selectedBank.bank_code}-${selectedBank.account_number}-${selectedBank.qr_template}.png?addInfo=${encodeURIComponent(
-        transferMemo
-      )}&accountName=${encodeURIComponent(selectedBank.account_holder)}`
-    : '';
+  const qrUrl = selectedBank?.qr_url
+    ? selectedBank.qr_url
+    : (selectedBank
+      ? `https://vietqr.app/img?bank=VietinBank&acc=${selectedBank.account_number}&template=compact&des=${encodeURIComponent(
+          transferMemo
+        )}&showinfo=true&holder=${encodeURIComponent(selectedBank.account_holder)}`
+      : '');
 
   return (
     <div className="animate-fade-in flex flex-col gap-6">

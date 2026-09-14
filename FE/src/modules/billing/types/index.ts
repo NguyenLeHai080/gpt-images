@@ -23,6 +23,8 @@ export interface BankAccountItem {
   qr_template: string;
   is_primary: boolean;
   is_active: boolean;
+  qr_url?: string;
+  transfer_memo?: string;
 }
 
 export interface SepayTransactionItem {
