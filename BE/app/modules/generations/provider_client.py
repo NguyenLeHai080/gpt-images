@@ -279,8 +279,12 @@ class ProviderClient:
 
                 local_file_path = None
 
+                # 0. Nếu trực tiếp là đường dẫn file tồn tại trên ổ đĩa
+                if os.path.exists(r_str) and os.path.isfile(r_str):
+                    local_file_path = r_str
+
                 # 1. Nếu là đường dẫn tương đối /static/uploads/references/...
-                if "/static/uploads/references/" in r_str:
+                elif "/static/uploads/references/" in r_str:
                     fname = r_str.split("/static/uploads/references/")[-1]
                     fpath = os.path.join(upload_dir, fname)
                     if os.path.exists(fpath):
@@ -333,8 +337,13 @@ class ProviderClient:
 
                 resolved_refs.append(r_str)
 
+            # ĐẶC BIỆT: Nhà Cung Cấp yêu cầu mode="edit" và trường "sourceImages" để kích hoạt pipeline Image-to-Image
+            payload["mode"] = "edit"
+            payload["sourceImages"] = resolved_refs
             payload["references"] = resolved_refs
-            payload["reference"] = resolved_refs[0]
+            payload["reference"] = resolved_refs[0] if resolved_refs else None
+            payload.pop("resolution", None)
+            payload.pop("quality", None)
 
         headers = {
             "Authorization": f"Bearer {active_key}"
