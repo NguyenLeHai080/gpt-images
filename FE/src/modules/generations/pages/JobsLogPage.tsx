@@ -150,8 +150,9 @@ export const JobsLogPage: React.FC = () => {
           );
         }
         return (
-          <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200/70 whitespace-nowrap">
-            Đang chạy
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 shadow-2xs whitespace-nowrap animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+            Đang chạy...
           </span>
         );
       },

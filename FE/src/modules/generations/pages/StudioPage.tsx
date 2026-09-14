@@ -137,7 +137,14 @@ export const StudioPage: React.FC = () => {
       width: 60,
       align: 'center',
       render: (_, record) =>
-        record.image_url ? (
+        record.status === 'PROCESSING' ? (
+          <div
+            className="w-10 h-10 rounded-lg border border-amber-300 bg-amber-50/80 flex items-center justify-center text-amber-600 mx-auto shrink-0 shadow-2xs animate-pulse"
+            title="Đang xử lý render ảnh AI..."
+          >
+            <RefreshCw size={16} className="animate-spin text-amber-600" />
+          </div>
+        ) : record.image_url ? (
           <div
             className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center cursor-pointer group relative shadow-2xs mx-auto shrink-0"
             onClick={() => setSelectedJobDetail(record)}
@@ -209,8 +216,16 @@ export const StudioPage: React.FC = () => {
       dataIndex: 'status',
       render: (val, record) => {
         const v = String(val);
-        const variant = v === 'SUCCEEDED' ? 'success' : v === 'FAILED' ? 'danger' : 'warning';
-        const label = v === 'SUCCEEDED' ? 'Thành công' : v === 'FAILED' ? 'Thất bại' : 'Đang xử lý';
+        if (v === 'PROCESSING' || v === 'PENDING') {
+          return (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 shadow-2xs whitespace-nowrap animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+              Đang xử lý...
+            </span>
+          );
+        }
+        const variant = v === 'SUCCEEDED' ? 'success' : 'danger';
+        const label = v === 'SUCCEEDED' ? 'Thành công' : 'Thất bại';
         return (
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <Badge variant={variant}>{label}</Badge>

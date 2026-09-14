@@ -24,7 +24,7 @@ import { ReferenceImageUploader } from './studio/ReferenceImageUploader';
 interface StudioModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (job?: any) => void;
 }
 
 const SAMPLE_PROMPTS = [
@@ -76,35 +76,43 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
       return;
     }
 
-    setIsGenerating(true);
+    const currentPrompt = prompt.trim();
+    const currentRef = referenceUrl.trim();
+    const actualDimensions = computeApiDimensions(resolution, aspectRatio);
+
+    // 1. Đóng modal NGAY LẬP TỨC theo đúng yêu cầu
+    onClose();
+    alert.toast('Đã khởi tạo job tạo ảnh! Bảng sẽ tự động hiển thị và cập nhật kết quả.', 'info');
+
+    // 2. Reset form
+    setPrompt('');
+    setReferenceUrl('');
     setPreviewUrl(null);
+    setIsGenerating(false);
+
+    // 3. Gửi lệnh tạo ảnh bất đồng bộ (async) tới backend
     try {
-      const actualDimensions = computeApiDimensions(resolution, aspectRatio);
       const res = await generationsApi.generateImage({
-        prompt: prompt.trim(),
+        prompt: currentPrompt,
         model: 'gpt-image-2',
         aspectRatio: actualDimensions,
         resolution,
         quality,
-        reference: referenceUrl.trim() || undefined,
-        references: referenceUrl.trim() ? [referenceUrl.trim()] : undefined,
+        reference: currentRef || undefined,
+        references: currentRef ? [currentRef] : undefined,
         count: 1,
+        executionMode: 'async',
         force_refresh: forceRefresh,
       });
 
       if (res.success && res.data) {
-        setPreviewUrl(res.data.image_url || null);
         if (res.data.is_cached) {
           alert.toast('⚡ Phục vụ tức thì từ Smart Cache (0đ vốn NCC, 25ms)!', 'success');
-        } else {
-          alert.toast('Tạo ảnh thành công từ nhà cung cấp!', 'success');
         }
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(res.data);
       }
-    } catch (err) {
-      console.warn(err);
-    } finally {
-      setIsGenerating(false);
+    } catch (err: any) {
+      console.warn('[StudioModal] Lỗi khởi tạo job:', err);
     }
   };
 

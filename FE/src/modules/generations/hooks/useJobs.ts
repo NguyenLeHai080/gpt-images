@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { generationsApi } from '../api';
+import { alert } from '../../../core/alert';
 import type { JobLogItem, UserJobStats } from '../types';
 
 export const useJobs = (_isAdmin: boolean = false) => {
@@ -11,6 +12,8 @@ export const useJobs = (_isAdmin: boolean = false) => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
 
+  const prevJobsRef = useRef<JobLogItem[]>([]);
+
   const [userStats, setUserStats] = useState<UserJobStats>({
     total_jobs: 0,
     successful_jobs: 0,
@@ -18,7 +21,7 @@ export const useJobs = (_isAdmin: boolean = false) => {
     total_spent: 0,
   });
 
-  // 1. Debounce ô tìm kiếm 300ms để loại bỏ hoàn toàn lag khi người dùng gõ phím
+  // 1. Debounce ô tìm kiếm 300ms
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -26,9 +29,11 @@ export const useJobs = (_isAdmin: boolean = false) => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 2. Tải danh sách Jobs cực nhanh (payload siêu nhẹ ~6KB, ~25ms)
-  const fetchJobs = useCallback(async () => {
-    setIsLoading(true);
+  // 2. Tải danh sách Jobs (Hỗ trợ chế độ ngầm silent không nhấp nháy UI)
+  const fetchJobs = useCallback(async (silent: boolean = false) => {
+    if (!silent) {
+      setIsLoading(true);
+    }
     try {
       const res = await generationsApi.getJobs({
         status: statusFilter,
@@ -38,7 +43,26 @@ export const useJobs = (_isAdmin: boolean = false) => {
       });
 
       if (res.success && res.data) {
-        setJobs(res.data.items || []);
+        const newItems: JobLogItem[] = res.data.items || [];
+
+        // Phát hiện các job vừa chuyển trạng thái từ PROCESSING -> SUCCEEDED / FAILED
+        if (prevJobsRef.current.length > 0) {
+          for (const newItem of newItems) {
+            const oldItem = prevJobsRef.current.find((o) => o.id === newItem.id);
+            if (oldItem && (oldItem.status === 'PROCESSING' || oldItem.status === 'PENDING')) {
+              if (newItem.status === 'SUCCEEDED') {
+                const shortPrompt = newItem.prompt.length > 35 ? `${newItem.prompt.slice(0, 35)}...` : newItem.prompt;
+                alert.toast(`🎉 Job "${shortPrompt}" đã tạo ảnh thành công!`, 'success');
+              } else if (newItem.status === 'FAILED') {
+                const shortPrompt = newItem.prompt.length > 35 ? `${newItem.prompt.slice(0, 35)}...` : newItem.prompt;
+                alert.toast(`❌ Job "${shortPrompt}" thất bại: ${newItem.error_message || 'Lỗi không xác định'}`, 'error');
+              }
+            }
+          }
+        }
+
+        prevJobsRef.current = newItems;
+        setJobs(newItems);
         setTotal(res.data.total || 0);
         if (res.data.stats) {
           setUserStats(res.data.stats);
@@ -47,19 +71,42 @@ export const useJobs = (_isAdmin: boolean = false) => {
     } catch (err) {
       console.warn('[useJobs] Lỗi tải danh sách jobs:', err);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   }, [statusFilter, debouncedSearch, page]);
 
-  // Khi status hoặc search hoặc page thay đổi, chỉ load lại bảng jobs
+  // Khi status hoặc search hoặc page thay đổi, load lại bảng jobs
   useEffect(() => {
-    fetchJobs();
+    fetchJobs(false);
   }, [fetchJobs]);
 
+  // 3. Cơ chế Auto-Polling thông minh: Khi có job PROCESSING / PENDING thì tự động thăm dò mỗi 2.5s
+  useEffect(() => {
+    const hasActiveJob = jobs.some(
+      (j) => j.status === 'PROCESSING' || j.status === 'PENDING'
+    );
+
+    if (!hasActiveJob) return;
+
+    const interval = setInterval(() => {
+      fetchJobs(true); // silent fetch không nháy spinner
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [jobs, fetchJobs]);
+
   // Làm mới danh sách jobs
-  const refetch = useCallback(async () => {
-    await fetchJobs();
+  const refetch = useCallback(async (silent?: boolean | any) => {
+    await fetchJobs(silent === true);
   }, [fetchJobs]);
+
+  // Thêm tức thì job tạm thời vào đầu bảng (Optimistic UI)
+  const addOptimisticJob = useCallback((job: JobLogItem) => {
+    setJobs((prev) => [job, ...prev.filter((j) => j.id !== job.id)]);
+    setTotal((prev) => prev + 1);
+  }, []);
 
   return {
     jobs,
@@ -73,5 +120,6 @@ export const useJobs = (_isAdmin: boolean = false) => {
     setPage,
     userStats,
     refetch,
+    addOptimisticJob,
   };
 };

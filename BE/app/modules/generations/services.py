@@ -43,6 +43,132 @@ class GenerationService:
             return f"/api/v1/generations/jobs/{job_id}/image"
         return raw_url
 
+    def _run_async_generation(
+        self,
+        job_id: str,
+        user_id: str,
+        api_key_id: Optional[str],
+        request: ImageGenerationRequest,
+        mapped_ar: str,
+        mapped_res: str,
+        mapped_qual: str,
+        ref_list: List[str],
+        cache_key: str,
+        required_amount: float,
+        cost_amount: float,
+        profit_amount: float,
+        user_provider_key: Optional[str]
+    ):
+        from app.core.database import SessionLocal
+        db = SessionLocal()
+        try:
+            job = db.query(ImageGenerationJob).filter(ImageGenerationJob.id == job_id).first()
+            if not job:
+                return
+            user = db.query(User).filter(User.id == user_id).first()
+            wallet = db.query(Wallet).filter(Wallet.user_id == user_id).first()
+
+            status_code, resp_data, latency_ms = provider_client.generate_image_upstream(
+                prompt=request.prompt,
+                model=request.model,
+                aspect_ratio=mapped_ar,
+                resolution=mapped_res,
+                quality=mapped_qual,
+                reference=job.reference,
+                references=ref_list if ref_list else None,
+                count=request.count,
+                execution_mode="sync",
+                provider_key=user_provider_key
+            )
+            job.latency_ms = latency_ms
+
+            if status_code in (200, 201) and "error" not in resp_data:
+                gen_data = resp_data.get("generation", resp_data)
+                provider_task_id = gen_data.get("id") or gen_data.get("taskId")
+
+                image_url = None
+                if "images" in resp_data and isinstance(resp_data["images"], list) and len(resp_data["images"]) > 0:
+                    img_item = resp_data["images"][0]
+                    image_url = img_item.get("url") if isinstance(img_item, dict) else str(img_item)
+                elif "outputDataUrl" in gen_data:
+                    image_url = gen_data["outputDataUrl"]
+                elif "images" in gen_data and isinstance(gen_data["images"], list) and len(gen_data["images"]) > 0:
+                    img_item = gen_data["images"][0]
+                    image_url = img_item.get("url") if isinstance(img_item, dict) else str(img_item)
+                elif "output" in gen_data:
+                    image_url = gen_data["output"]
+                elif "url" in gen_data:
+                    image_url = gen_data["url"]
+
+                if not image_url:
+                    image_url = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=80"
+
+                job.status = "SUCCEEDED"
+                job.provider_generation_id = provider_task_id
+                job.provider_task_id = provider_task_id
+                job.image_url = image_url
+                job.raw_response = str(resp_data)[:1000]
+
+                if wallet:
+                    wallet.balance -= required_amount
+                    wallet.api_spent += required_amount
+
+                if not request.no_cache and image_url:
+                    prompt_cache.set(
+                        db=db,
+                        key=cache_key,
+                        prompt=request.prompt,
+                        model=request.model,
+                        aspect_ratio=mapped_ar,
+                        resolution=mapped_res,
+                        quality=mapped_qual,
+                        image_url=image_url,
+                        provider_task_id=provider_task_id,
+                        references=ref_list
+                    )
+
+                if user:
+                    activity = ApiActivityLog(
+                        id=f"act_{uuid.uuid4().hex[:12]}",
+                        user_name=user.full_name or user.email,
+                        model_name=request.model,
+                        status="success",
+                        cost=required_amount,
+                        cost_display=f"{required_amount:,.0f} đ",
+                        created_at=datetime.utcnow()
+                    )
+                    db.add(activity)
+
+                db.commit()
+                print(f"[AsyncGeneration] Job {job_id} hoàn tất thành công ({latency_ms}ms)!")
+            else:
+                err_msg = ""
+                if isinstance(resp_data, dict):
+                    err_msg = resp_data.get("error", {}).get("message") or resp_data.get("message") or str(resp_data)
+                else:
+                    err_msg = str(resp_data)
+
+                job.status = "FAILED"
+                job.error_message = err_msg or f"Lỗi từ nhà cung cấp [Mã {status_code}]"
+                job.error_code = f"PROVIDER_ERR_{status_code}"
+                job.raw_response = str(resp_data)[:1000]
+                job.charged_customer = 0.0
+                job.cost_provider = 0.0
+                job.profit = 0.0
+                db.commit()
+                print(f"[AsyncGeneration] Job {job_id} thất bại: {job.error_message}")
+        except Exception as e:
+            print(f"[AsyncGeneration] Lỗi ngoại lệ trong background generation: {e}")
+            try:
+                job = db.query(ImageGenerationJob).filter(ImageGenerationJob.id == job_id).first()
+                if job:
+                    job.status = "FAILED"
+                    job.error_message = f"Lỗi hệ thống khi xử lý: {str(e)}"
+                    db.commit()
+            except Exception:
+                pass
+        finally:
+            db.close()
 
     def process_generation(
         self,
@@ -205,6 +331,51 @@ class GenerationService:
 
         # 3. Gọi upstream tới NCC (sử dụng Provider Key riêng của User nếu có, ngược lại dùng System Master Key)
         user_provider_key = user.provider_api_key if user and user.provider_api_key else None
+
+        # 3. Nếu là chế độ async (bất đồng bộ): kích hoạt chạy ngầm và phản hồi tức thì về client để đóng modal & load bảng
+        if request.executionMode == "async":
+            import threading
+            thread = threading.Thread(
+                target=self._run_async_generation,
+                args=(
+                    job.id,
+                    user.id,
+                    api_key.id if api_key else None,
+                    request,
+                    mapped_ar,
+                    mapped_res,
+                    mapped_qual,
+                    ref_list,
+                    cache_key,
+                    required_amount,
+                    cost_amount,
+                    profit_amount,
+                    user_provider_key
+                ),
+                daemon=True
+            )
+            thread.start()
+
+            return ImageGenerationResponse(
+                job_id=job.id,
+                status="PROCESSING",
+                prompt=job.prompt,
+                model=job.model,
+                aspect_ratio=job.aspect_ratio,
+                resolution=job.resolution or "1k",
+                quality=job.quality or "high",
+                reference=job.reference,
+                references=ref_list if ref_list else None,
+                image_url=None,
+                provider_task_id=None,
+                charged_amount=required_amount,
+                currency="VND",
+                latency_ms=0,
+                is_cached=False,
+                created_at=job.created_at,
+                error_message=None
+            )
+
         status_code, resp_data, latency_ms = provider_client.generate_image_upstream(
             prompt=request.prompt,
             model=request.model,
