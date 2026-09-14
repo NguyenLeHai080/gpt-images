@@ -64,7 +64,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroupConfig[] = [
     items: [
       { id: 'wallet', label: 'Ví & Dòng tiền', path: '/app/billing', icon: Wallet },
       { id: 'pnl', label: 'Báo cáo Dòng tiền & PnL', path: '/app/pnl', icon: TrendingUp, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
-      { id: 'sepay', label: 'Giao dịch nạp SePay', path: '/app/sepay', icon: ArrowDownToLine },
+      { id: 'sepay', label: 'Giao dịch nạp SePay', path: '/app/sepay', icon: ArrowDownToLine, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
       { id: 'banking', label: 'Ngân hàng & QR', path: '/app/banking', icon: Building2 },
       { id: 'credit-config', label: 'Cấu hình Credit', path: '/app/credit-config', icon: Sliders, requiredRoles: ['SUPER_ADMIN', 'ADMIN'] },
     ],

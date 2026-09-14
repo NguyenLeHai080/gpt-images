@@ -149,50 +149,24 @@ class BillingService:
                     for l in logs
                 ]
 
-            return [
-                SepayTransactionItem(
-                    id="sp_987123",
-                    gateway="SePay VietinBank",
-                    transaction_date="13/09/2026 23:45:10",
-                    account_number="109873538727",
-                    sub_account="GPT-IMAGES",
-                    amount_in=2000000.0,
-                    amount_out=0.0,
-                    accumulated=4331500.0,
-                    code="GPT user_admin_01",
-                    transaction_content="SePay VietinBank GPT user_admin_01",
-                    reference_number="FT26257891238491",
-                    status="COMPLETED"
-                ),
-                SepayTransactionItem(
-                    id="sp_987099",
-                    gateway="SePay VietinBank",
-                    transaction_date="12/09/2026 14:15:22",
-                    account_number="109873538727",
-                    sub_account="GPT-IMAGES",
-                    amount_in=1500000.0,
-                    amount_out=0.0,
-                    accumulated=2331500.0,
-                    code="GPT user_dev_01",
-                    transaction_content="Chuyen khoan nap tien API GPT user_dev_01",
-                    reference_number="FT26256192837102",
-                    status="COMPLETED"
-                ),
-                SepayTransactionItem(
-                    id="sp_986950",
-                    gateway="SePay VietinBank",
-                    transaction_date="10/09/2026 09:30:00",
-                    account_number="109873538727",
-                    sub_account="GPT-IMAGES",
-                    amount_in=831500.0,
-                    amount_out=0.0,
-                    accumulated=831500.0,
-                    code="GPT user_admin_01",
-                    transaction_content="Nap credit qua VietQR GPT user_admin_01",
-                    reference_number="FT26254109283749",
-                    status="COMPLETED"
-                )
-            ]
+            return []
+        finally:
+            if close_session:
+                db.close()
+
+    @staticmethod
+    def clear_sepay_transactions(db: Optional[Session] = None) -> int:
+        close_session = False
+        if db is None:
+            db = SessionLocal()
+            close_session = True
+        try:
+            count = db.query(SepayWebhookLog).delete()
+            db.commit()
+            return count
+        except Exception:
+            db.rollback()
+            raise
         finally:
             if close_session:
                 db.close()

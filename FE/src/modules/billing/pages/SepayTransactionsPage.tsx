@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Search, ExternalLink } from 'lucide-react';
+import { RefreshCw, Search, ExternalLink, Trash2 } from 'lucide-react';
 import { Table, type Column } from '../../../core/components/Table';
 import { Button } from '../../../core/components/Button/Button';
 import { Badge } from '../../../core/components/Badge/Badge';
@@ -25,6 +25,27 @@ export const SepayTransactionsPage: React.FC = () => {
       setIsLoading(false);
     }
   }, []);
+
+  const handleClearHistory = async () => {
+    const confirmed = await alert.confirm({
+      title: 'Xoá lịch sử nạp SePay?',
+      text: 'Toàn bộ nhật ký đối soát nạp tiền SePay sẽ được dọn sạch khỏi hệ thống. Bạn có chắc chắn muốn thực hiện?',
+      confirmButtonText: 'Đồng ý xoá',
+      cancelButtonText: 'Huỷ bỏ',
+    });
+
+    if (confirmed) {
+      setIsLoading(true);
+      try {
+        await billingApi.clearSepayTransactions();
+        await loadData();
+      } catch (err: any) {
+        alert.error('Lỗi khi xoá lịch sử', err?.message || 'Không thể xoá lịch sử nạp tiền');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -139,6 +160,16 @@ export const SepayTransactionsPage: React.FC = () => {
             onClick={loadData}
           >
             Làm mới
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
+            leftIcon={<Trash2 size={15} />}
+            onClick={handleClearHistory}
+            disabled={isLoading || transactions.length === 0}
+          >
+            Xoá lịch sử
           </Button>
           <Button
             variant="primary"

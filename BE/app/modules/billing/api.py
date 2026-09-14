@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.responses import success_response
@@ -44,9 +44,20 @@ def get_bank_accounts(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/sepay")
-def get_sepay_transactions():
-    transactions = billing_service.get_sepay_transactions()
+def get_sepay_transactions(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user_from_request(request, db)
+    if not user or user.role not in ("SUPER_ADMIN", "ADMIN"):
+        raise HTTPException(status_code=403, detail="Chỉ Quản trị viên mới có quyền truy cập nhật ký nạp tiền SePay.")
+    transactions = billing_service.get_sepay_transactions(db=db)
     return success_response([t.model_dump() for t in transactions], "Lấy giao dịch SePay thành công")
+
+@router.delete("/sepay")
+def clear_sepay_transactions(request: Request, db: Session = Depends(get_db)):
+    user = get_current_user_from_request(request, db)
+    if not user or user.role not in ("SUPER_ADMIN", "ADMIN"):
+        raise HTTPException(status_code=403, detail="Chỉ Quản trị viên mới có quyền xoá nhật ký nạp tiền SePay.")
+    deleted_count = billing_service.clear_sepay_transactions(db=db)
+    return success_response({"deleted_count": deleted_count}, f"Đã xoá {deleted_count} bản ghi lịch sử nạp tiền SePay.")
 
 @router.get("/credit-config")
 def get_credit_config():

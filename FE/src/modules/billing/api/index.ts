@@ -25,6 +25,10 @@ export const billingApi = {
     return apiClient.get<SepayTransactionItem[]>('/billing/sepay');
   },
 
+  clearSepayTransactions: async (): Promise<ApiResponse<{ deleted_count: number }>> => {
+    return apiClient.delete<{ deleted_count: number }>('/billing/sepay', { successToast: 'Đã làm sạch lịch sử nạp tiền SePay!' });
+  },
+
   getCreditConfig: async (): Promise<ApiResponse<CreditConfigItem>> => {
     return apiClient.get<CreditConfigItem>('/billing/credit-config');
   },
