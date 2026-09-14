@@ -114,6 +114,20 @@ app.include_router(tools_router, prefix=settings.API_V1_STR)
 # Mount thêm không prefix để hỗ trợ chuẩn OpenAI SDK client (base_url: http://127.0.0.1:8001/v1)
 app.include_router(generations_router)
 
+# Root Webhook Aliases cho cổng SePay (đảm bảo SePay cấu hình bất kỳ đường dẫn nào cũng nhận được)
+from app.modules.billing.schemas import SepayWebhookPayload
+from app.modules.billing.services import billing_service
+
+@app.post("/webhook/sepay", tags=["SePay Webhook"])
+@app.post("/webhook", tags=["SePay Webhook"])
+@app.post("/sepay/webhook", tags=["SePay Webhook"])
+@app.post("/api/webhook", tags=["SePay Webhook"])
+@app.post("/api/sepay/webhook", tags=["SePay Webhook"])
+@app.post("/api/v1/webhook", tags=["SePay Webhook"])
+@app.post("/api/v1/sepay/webhook", tags=["SePay Webhook"])
+def receive_sepay_webhook_root(payload: SepayWebhookPayload):
+    return billing_service.process_sepay_webhook(payload)
+
 import os
 from fastapi.staticfiles import StaticFiles
 os.makedirs(settings.REFERENCES_UPLOAD_DIR, exist_ok=True)

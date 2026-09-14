@@ -192,14 +192,37 @@ class BillingService:
                 }
 
             # 2. Phân luồng theo mã tiền tố của gpt-images:
-            # Hỗ trợ: GPT <USER_ID>, GPT<USER_ID>, MF NAP <USER_ID>, GPTIMG <USER_ID>
+            # Hỗ trợ: GPT <USER_ID>, GPT<USER_ID>, MF NAP <USER_ID>, GPTIMG <USER_ID>, hoặc trực tiếp ID/email
             pattern = r'(?:GPT|MF\s*NAP|GPTIMG)\s*([a-zA-Z0-9_\-]+)'
             match = re.search(pattern, content, re.IGNORECASE)
 
-            # Nếu KHÔNG chứa tiền tố của gpt-images (nghĩa là thuộc web Meridians hoặc chuyển khoản cá nhân khác):
-            # Trả về ngay HTTP 200 {success: true} để SePay xác nhận thành công và không gửi lại,
-            # hoàn toàn không can thiệp vào số dư ví của gpt-images!
-            if not match:
+            target_user = None
+            if match:
+                raw_user_token = match.group(1).strip()
+                target_user = db.query(User).filter(
+                    (User.id == raw_user_token) |
+                    (User.id == f"user_{raw_user_token}") |
+                    (User.id.ilike(f"%{raw_user_token}%")) |
+                    (User.email.ilike(f"{raw_user_token}%")) |
+                    (User.full_name.ilike(f"%{raw_user_token}%"))
+                ).first()
+
+            if not target_user:
+                # Quét trực tiếp xem trong nội dung chuyển khoản có chứa mã user_id, hash id hoặc email của khách không
+                all_users = db.query(User).all()
+                for u in all_users:
+                    token = u.id.replace("user_", "")
+                    if u.id.lower() in content.lower() or (len(token) >= 6 and token.lower() in content.lower()):
+                        target_user = u
+                        break
+                    username = u.email.split("@")[0].lower() if u.email else ""
+                    if len(username) >= 4 and username in content.lower():
+                        target_user = u
+                        break
+
+            # Nếu KHÔNG chứa tiền tố của gpt-images và không khớp bất kỳ user nào trong hệ thống:
+            # Trả về ngay HTTP 200 {success: true} để SePay xác nhận thành công và không gửi lại
+            if not target_user and not match:
                 log = SepayWebhookLog(
                     sepay_id=str(payload.id) if payload.id else None,
                     gateway=payload.gateway or "VietinBank",
@@ -221,15 +244,7 @@ class BillingService:
                     "processed": False
                 }
 
-            raw_user_token = match.group(1).strip()
-
-            # 3. Tìm User và Wallet tương ứng
-            target_user = db.query(User).filter(
-                (User.id == raw_user_token) |
-                (User.email.ilike(f"{raw_user_token}%")) |
-                (User.full_name.ilike(f"%{raw_user_token}%"))
-            ).first()
-
+            # 3. Tìm Wallet tương ứng
             wallet = None
             if target_user:
                 wallet = db.query(Wallet).filter(Wallet.user_id == target_user.id).first()
