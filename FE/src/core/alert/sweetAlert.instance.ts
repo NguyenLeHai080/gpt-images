@@ -1,5 +1,4 @@
 import Swal from 'sweetalert2';
-import './alert.scss';
 
 // Standard Alert Instance
 export const CustomSwal = Swal.mixin({
@@ -7,6 +6,7 @@ export const CustomSwal = Swal.mixin({
     popup: 'mf-swal-popup',
     title: 'mf-swal-title',
     htmlContainer: 'mf-swal-html',
+    actions: 'mf-swal-actions',
     confirmButton: 'mf-swal-confirm-btn',
     cancelButton: 'mf-swal-cancel-btn',
   },

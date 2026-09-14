@@ -45,6 +45,13 @@ export interface ModelDistributionItem {
   badge: string;
 }
 
+export interface AccountOption {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export interface DashboardOverviewData {
   date_display: string;
   metrics: MetricItem[];
@@ -53,4 +60,7 @@ export interface DashboardOverviewData {
   recent_activities: ActivityItem[];
   operation_summary: OperationSummary;
   model_distribution: ModelDistributionItem[];
+  scope_type?: 'all' | 'user';
+  scope_user_name?: string;
+  accounts?: AccountOption[];
 }

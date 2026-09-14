@@ -42,6 +42,12 @@ class ModelDistributionItem(BaseModel):
     cost_amount: str
     badge: str
 
+class AccountOption(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: str
+
 class DashboardOverviewResponse(BaseModel):
     date_display: str
     metrics: List[MetricItem]
@@ -50,3 +56,6 @@ class DashboardOverviewResponse(BaseModel):
     recent_activities: List[ActivityItem]
     operation_summary: OperationSummary
     model_distribution: List[ModelDistributionItem]
+    scope_type: str = "all"  # "all" | "user"
+    scope_user_name: Optional[str] = "Toàn hệ thống"
+    accounts: List[AccountOption] = []

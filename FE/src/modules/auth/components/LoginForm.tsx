@@ -4,7 +4,6 @@ import { Button } from '../../../core/components/Button/Button';
 import { Input } from '../../../core/components/Input/Input';
 import { useAuthForm } from '../hooks/useAuthForm';
 import { alert } from '../../../core/alert';
-import '../pages/login.css';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -41,32 +40,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         <Input
           label="Email"
           type="email"
-          placeholder="admin@mintforge.vn"
+          placeholder="Nhập địa chỉ email"
           value={formData.email}
           onChange={e => handleChange('email', e.target.value)}
           leftIcon={<Mail size={17} />}
           required
         />
 
-        {/* Checkbox: Link API Key */}
-        <div className="mf-checkbox-wrapper">
-          <input
-            type="checkbox"
-            id="link-api-key"
-            checked={formData.linkApiKey}
-            onChange={e => handleChange('linkApiKey', e.target.checked)}
-            className="mf-checkbox"
-          />
-          <label htmlFor="link-api-key" className="mf-checkbox-label">
-            Tôi đã có API key và muốn liên kết với tài khoản này
-          </label>
-        </div>
-
         {/* Password Input */}
         <Input
           label="Mật khẩu"
           type={showPassword ? 'text' : 'password'}
-          placeholder="••••••••"
+          placeholder="Nhập mật khẩu"
           value={formData.password}
           onChange={e => handleChange('password', e.target.value)}
           leftIcon={<Lock size={17} />}

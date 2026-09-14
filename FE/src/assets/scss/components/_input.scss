@@ -1,0 +1,102 @@
+/* MintForge Input Component Styles */
+.mf-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.mf-input-wrapper--full-width {
+  width: 100%;
+}
+
+.mf-input-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.mf-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  background-color: #f8fafc;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    border-color: #cbd5e1;
+    background-color: #ffffff;
+  }
+
+  &:focus-within {
+    border-color: var(--color-primary);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+  }
+}
+
+.mf-input-container--error {
+  border-color: var(--color-danger) !important;
+  background-color: #fff;
+}
+
+.mf-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--color-text-main);
+  font-size: 14px;
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+
+.mf-input--has-left {
+  padding-left: 40px;
+}
+
+.mf-input--has-right {
+  padding-right: 40px;
+}
+
+.mf-input__icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.mf-input__icon--left {
+  left: 12px;
+}
+
+.mf-input__icon--right {
+  right: 12px;
+}
+
+.mf-input__icon--clickable {
+  pointer-events: auto;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: #64748b;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-text-main);
+  }
+}
+
+.mf-input-error {
+  font-size: 12px;
+  color: var(--color-danger);
+  font-weight: 500;
+}

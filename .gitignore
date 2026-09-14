@@ -34,3 +34,8 @@ env/
 venv/
 ENV/
 .venv
+
+### Uploads & Storage
+uploads/
+BE/uploads/
+BE/app/uploads/

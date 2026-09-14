@@ -31,9 +31,18 @@ class Settings:
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "*"
     ]
+    
+    # Upload Directories
+    BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")
+    REFERENCES_UPLOAD_DIR: str = os.path.join(UPLOAD_DIR, "references")
 
 settings = Settings()

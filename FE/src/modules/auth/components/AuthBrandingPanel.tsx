@@ -1,8 +1,7 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Zap, Image, ShieldCheck } from 'lucide-react';
 import logoImg from '../../../assets/img/logo.svg';
 import meshImg from '../../../assets/img/concentric-mesh.svg';
-import '../pages/login.css';
 
 export const AuthBrandingPanel: React.FC = () => {
   return (
@@ -23,35 +22,63 @@ export const AuthBrandingPanel: React.FC = () => {
       {/* Center Value Proposition */}
       <div className="mf-branding-content">
         <div className="mf-unified-badge">
-          <Sparkles size={14} className="mf-unified-badge-icon" />
-          <span>Quản trị doanh nghiệp hợp nhất</span>
+          <Sparkles size={14} className="mf-unified-badge-icon animate-pulse" />
+          <span>Cổng AI Generator thế hệ mới</span>
         </div>
 
         <h1 className="mf-branding-title">
-          Vận hành đội ngũ.<br />
-          <span className="mf-gradient-orange">Tăng tốc tăng trưởng.</span>
+          Sáng tạo hình ảnh AI.<br />
+          <span className="mf-gradient-orange">Tối ưu hóa lợi nhuận.</span>
         </h1>
 
         <p className="mf-branding-desc">
-          Quản lý nhân sự, hợp đồng, dự án và tài chính trong một không gian làm việc hiện đại.
+          Cổng phân phối API model <strong>gpt-image-2</strong>, tạo ảnh tức thì với Smart Cache 25ms, định giá linh hoạt và kiểm soát dòng tiền tự động.
         </p>
 
-        {/* Social Proof / Stats */}
+        {/* Feature Tags */}
+        <div className="flex items-center gap-2 flex-wrap mb-7 text-xs font-semibold">
+          <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 flex items-center gap-1.5 font-mono">
+            <Sparkles size={12} className="text-orange-400" /> gpt-image-2
+          </span>
+          <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 flex items-center gap-1.5">
+            <Zap size={12} className="text-amber-400" /> Smart Cache 0đ
+          </span>
+          <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 flex items-center gap-1.5">
+            <Image size={12} className="text-emerald-400" /> Image-to-Image
+          </span>
+        </div>
+
+        {/* Social Proof / Stats Cards */}
         <div className="mf-branding-stats">
-          <div className="mf-stat-item">
-            <span className="mf-stat-number">248+</span>
-            <span className="mf-stat-label">Nhân viên đang kết nối</span>
+          <div className="mf-stat-card">
+            <div className="mf-stat-icon-wrapper">
+              <Zap size={15} className="text-amber-400" />
+            </div>
+            <span className="mf-stat-number">25ms</span>
+            <span className="mf-stat-label">Tốc độ Smart Cache</span>
           </div>
-          <div className="mf-stat-item">
+
+          <div className="mf-stat-card">
+            <div className="mf-stat-icon-wrapper">
+              <Image size={15} className="text-orange-400" />
+            </div>
+            <span className="mf-stat-number">4K Ultra</span>
+            <span className="mf-stat-label">Độ phân giải tối đa</span>
+          </div>
+
+          <div className="mf-stat-card">
+            <div className="mf-stat-icon-wrapper">
+              <ShieldCheck size={15} className="text-emerald-400" />
+            </div>
             <span className="mf-stat-number">99.9%</span>
-            <span className="mf-stat-label">Thời gian hoạt động</span>
+            <span className="mf-stat-label">Độ sẵn sàng hệ thống</span>
           </div>
         </div>
       </div>
 
       {/* Footer Copyright */}
       <div className="mf-branding-footer">
-        © 2026 MintForge Business Suite
+        © 2026 MintForge • Cổng AI Generator gpt-image-2
       </div>
     </div>
   );

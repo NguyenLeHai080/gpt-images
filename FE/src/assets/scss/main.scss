@@ -1,6 +1,22 @@
 @use './variables' as *;
 @use './mixins' as *;
 @use './utilities' as *;
+@use './base' as *;
+
+// Layout
+@use './layout/layout';
+
+// Components
+@use './components/button';
+@use './components/badge';
+@use './components/card';
+@use './components/input';
+@use './components/alert';
+
+// Modules
+@use './modules/auth';
+@use './modules/dashboard/dashboard';
+@use './modules/pricing';
 
 @tailwind base;
 @tailwind components;

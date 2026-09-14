@@ -5,6 +5,9 @@ from app.modules.auth.models import User
 from app.modules.api_keys.models import ApiKey
 from app.modules.billing.models import Wallet, Transaction
 from app.modules.dashboard.models import ApiActivityLog
+from app.modules.generations.models import ImageGenerationJob, ProviderAccount
+from app.modules.pricing.models import ModelPricing
+from app.modules.pricing.services import pricing_service
 
 def init_database() -> None:
     """
@@ -15,22 +18,78 @@ def init_database() -> None:
 
     db = SessionLocal()
     try:
-        # 1. Seed Super Admin User
-        admin_user = db.query(User).filter(User.email == "admin@mintforge.vn").first()
+        # 1. Seed Users (Super Admin, Admin, Developer, Members)
+        seed_users = [
+            {
+                "id": "user_admin_01",
+                "email": "admin@mintforge.vn",
+                "password": "admin123",
+                "full_name": "Nguyen Le Hai",
+                "role": "SUPER_ADMIN",
+                "company_name": "MintForge Business Suite",
+                "is_active": True,
+            },
+            {
+                "id": "user_admin_02",
+                "email": "techlead@mintforge.vn",
+                "password": "techlead123",
+                "full_name": "Tran Minh Duc",
+                "role": "ADMIN",
+                "company_name": "MintForge AI Lab",
+                "is_active": True,
+            },
+            {
+                "id": "user_dev_01",
+                "email": "ai.dev@mintforge.vn",
+                "password": "aidev123",
+                "full_name": "Le Hoang Nam",
+                "role": "DEVELOPER",
+                "company_name": "MintForge Engineering",
+                "is_active": True,
+            },
+            {
+                "id": "user_member_01",
+                "email": "accountant@mintforge.vn",
+                "password": "member123",
+                "full_name": "Nguyen Thu Ha",
+                "role": "MEMBER",
+                "company_name": "MintForge Finance",
+                "is_active": True,
+            },
+            {
+                "id": "user_member_02",
+                "email": "viewer@mintforge.vn",
+                "password": "viewer123",
+                "full_name": "Pham Quoc Bao",
+                "role": "MEMBER",
+                "company_name": "External Partner Ltd",
+                "is_active": False,
+            },
+        ]
+
+        admin_user = None
+        for u in seed_users:
+            existing = db.query(User).filter(User.email == u["email"]).first()
+            if not existing:
+                new_u = User(
+                    id=u["id"],
+                    email=u["email"],
+                    hashed_password=get_password_hash(u["password"]),
+                    full_name=u["full_name"],
+                    role=u["role"],
+                    company_name=u["company_name"],
+                    avatar_url=None,
+                    is_active=u["is_active"],
+                )
+                db.add(new_u)
+                if u["role"] == "SUPER_ADMIN":
+                    admin_user = new_u
+            elif u["role"] == "SUPER_ADMIN":
+                admin_user = existing
+        db.commit()
         if not admin_user:
-            admin_user = User(
-                id="user_admin_01",
-                email="admin@mintforge.vn",
-                hashed_password=get_password_hash("admin123"),
-                full_name="Nguyen Le Hai",
-                role="SUPER_ADMIN",
-                company_name="MintForge Business Suite",
-                avatar_url=None,
-                is_active=True,
-            )
-            db.add(admin_user)
-            db.commit()
-            print("[PostgreSQL] Seeded super admin: admin@mintforge.vn")
+            admin_user = db.query(User).first()
+        print("[PostgreSQL] Seeded system users with multiple roles.")
 
         # 2. Seed 28 API Keys
         total_keys = db.query(ApiKey).count()
@@ -98,19 +157,124 @@ def init_database() -> None:
             db.commit()
             print("[PostgreSQL] Seeded enterprise wallet and transactions.")
 
-        # 4. Seed Recent Activity Logs
-        act_count = db.query(ApiActivityLog).count()
-        if act_count == 0:
-            acts = [
-                ApiActivityLog(
-                    id=f"act_{i}", user_name="Nguyen Le Hai", model_name="gpt-image-2",
-                    status="success", cost=120.0, cost_display="120 đ",
-                    created_at=datetime(2026, 9, 12, 14, 20 - i * 3, 10)
-                ) for i in range(1, 5)
+        # 4. Seed Image Generation Jobs
+        job_count = db.query(ImageGenerationJob).count()
+        if job_count == 0:
+            sample_jobs = [
+                ImageGenerationJob(
+                    id="job_9981a82f",
+                    user_id=admin_user.id,
+                    api_key_id="key_01",
+                    prompt="Một chú chó Shiba Inu đang đeo kính đọc sách trong thư viện cổ điển ánh sáng ấm",
+                    model="gpt-image-2",
+                    aspect_ratio="1024x1024",
+                    count=1,
+                    status="SUCCEEDED",
+                    provider_task_id="cmtwv0sz9002vmlxpqpg5cifq",
+                    provider_generation_id="cmtwv0sz9002vmlxpqpg5cifq",
+                    image_url="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=1024&q=80",
+                    latency_ms=4820,
+                    cost_provider=120.0,
+                    charged_customer=150.0,
+                    profit=30.0,
+                    created_at=datetime(2026, 9, 13, 11, 30)
+                ),
+                ImageGenerationJob(
+                    id="job_8812bc3d",
+                    user_id=admin_user.id,
+                    api_key_id="key_01",
+                    prompt="Thành phố tương lai Cyberpunk với xe bay và ánh đèn neon phản chiếu mặt đường ướt",
+                    model="gpt-image-2",
+                    aspect_ratio="16:9",
+                    count=1,
+                    status="SUCCEEDED",
+                    provider_task_id="cmtwu129381kaxpqpg990a",
+                    provider_generation_id="cmtwu129381kaxpqpg990a",
+                    image_url="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1024&q=80",
+                    latency_ms=5210,
+                    cost_provider=120.0,
+                    charged_customer=150.0,
+                    profit=30.0,
+                    created_at=datetime(2026, 9, 13, 10, 15)
+                ),
+                ImageGenerationJob(
+                    id="job_7721df9a",
+                    user_id=admin_user.id,
+                    api_key_id="key_02",
+                    prompt="Logo biểu tượng năng lượng mặt trời tối giản phong cách vector 3D glassmorphism",
+                    model="gpt-image-2",
+                    aspect_ratio="1024x1024",
+                    count=1,
+                    status="SUCCEEDED",
+                    provider_task_id="cmtwt891029zmlxpqpg88bb",
+                    provider_generation_id="cmtwt891029zmlxpqpg88bb",
+                    image_url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=80",
+                    latency_ms=3940,
+                    cost_provider=120.0,
+                    charged_customer=150.0,
+                    profit=30.0,
+                    created_at=datetime(2026, 9, 13, 9, 40)
+                ),
+                ImageGenerationJob(
+                    id="job_6632ee10",
+                    user_id=admin_user.id,
+                    api_key_id="key_03",
+                    prompt="Bức tranh sơn dầu phong cảnh núi Phú Sĩ mùa thu lá đỏ soi bóng hồ nước",
+                    model="gpt-image-2",
+                    aspect_ratio="16:9",
+                    count=1,
+                    status="SUCCEEDED",
+                    provider_task_id="cmtws781920zmlxpqpg77cc",
+                    provider_generation_id="cmtws781920zmlxpqpg77cc",
+                    image_url="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1024&q=80",
+                    latency_ms=6120,
+                    cost_provider=120.0,
+                    charged_customer=150.0,
+                    profit=30.0,
+                    created_at=datetime(2026, 9, 13, 8, 10)
+                ),
+                ImageGenerationJob(
+                    id="job_5541ff22",
+                    user_id=admin_user.id,
+                    api_key_id="key_02",
+                    prompt="Prompt thử nghiệm vượt ngưỡng ký tự [Test error handling]",
+                    model="gpt-image-2",
+                    aspect_ratio="1024x1024",
+                    count=1,
+                    status="FAILED",
+                    error_message="Invalid request format from upstream provider (rate_limit_exceeded)",
+                    error_code="PROVIDER_ERR_429",
+                    latency_ms=850,
+                    cost_provider=0.0,
+                    charged_customer=0.0,
+                    profit=0.0,
+                    created_at=datetime(2026, 9, 13, 7, 0)
+                )
             ]
-            db.add_all(acts)
+            db.add_all(sample_jobs)
             db.commit()
-            print("[PostgreSQL] Seeded recent API activity logs.")
+            print("[PostgreSQL] Seeded initial image generation jobs.")
+
+        # 5. Seed Provider Config
+        provider_acc = db.query(ProviderAccount).filter(ProviderAccount.id == "provider_default").first()
+        if not provider_acc:
+            provider_acc = ProviderAccount(
+                id="provider_default",
+                provider_name="Leeh AI Cloud (api.leeh.dev)",
+                base_url="https://api.leeh.dev",
+                username="willownelson",
+                password="123123123",
+                wallet_balance=24702.0,
+                currency="VND",
+                is_active=True
+            )
+            db.add(provider_acc)
+            db.commit()
+            print("[PostgreSQL] Seeded upstream provider account configuration.")
+
+        # 6. Seed Model Pricing Rate Cards
+        pricing_service.ensure_seeded(db)
+        print("[PostgreSQL] Seeded model pricing rate cards (gpt-image-2, dall-e-3, etc.).")
 
     except Exception as e:
         db.rollback()

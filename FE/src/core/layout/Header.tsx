@@ -1,8 +1,7 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Menu, Search, Plus, Bell, BookOpen, Globe, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import avatarAdmin from '../../assets/img/avatar-admin.svg';
-import './layout.css';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -33,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Search Input Bar */}
-        <div className={`mf-header__search-container ${showMobileSearch ? 'mf-header__search--visible' : ''}`}>
+        {/* <div className={`mf-header__search-container ${showMobileSearch ? 'mf-header__search--visible' : ''}`}>
           <Search size={16} className="mf-search-icon" />
           <input
             type="text"
@@ -41,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="mf-search-input"
           />
           <kbd className="mf-search-kbd">⌘ K</kbd>
-        </div>
+        </div> */}
       </div>
 
       {/* Right Controls */}

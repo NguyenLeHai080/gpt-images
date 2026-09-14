@@ -1,0 +1,25 @@
+@use './sidebar';
+@use './header';
+@use './user_menu';
+@use './responsive';
+
+/* Base Main Layout Container */
+.mf-main-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-light-bg);
+}
+
+.mf-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.mf-content-container {
+  padding: 28px 32px 40px;
+  flex: 1;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}

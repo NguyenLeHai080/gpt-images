@@ -9,7 +9,7 @@ class BaseResponse(BaseModel, Generic[T]):
     data: Optional[T] = None
     error: Optional[dict] = None
 
-def success_response(data: Any = None, message: str = "Thành công") -> dict:
+def success_response(data: Any = None, message: str = "Thành công", status_code: Optional[int] = None) -> dict:
     return {
         "success": True,
         "message": message,
@@ -17,7 +17,7 @@ def success_response(data: Any = None, message: str = "Thành công") -> dict:
         "error": None
     }
 
-def error_response(code: str, message: str, details: Any = None) -> dict:
+def error_response(code: str, message: str, details: Any = None, status_code: Optional[int] = None) -> dict:
     return {
         "success": False,
         "message": message,
@@ -28,3 +28,4 @@ def error_response(code: str, message: str, details: Any = None) -> dict:
             "details": details
         }
     }
+

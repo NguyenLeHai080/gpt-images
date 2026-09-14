@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../../core/hooks/useAuth';
 import { alert } from '../../../core/alert';
 import type { LoginCredentials } from '../types';
@@ -6,10 +6,10 @@ import type { LoginCredentials } from '../types';
 export const useAuthForm = (onSuccess?: () => void) => {
   const { login, isLoading } = useAuth();
   const [formData, setFormData] = useState<LoginCredentials>({
-    email: 'admin@mintforge.vn',
+    email: '',
     password: '',
     linkApiKey: false,
-    rememberMe: true,
+    rememberMe: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);

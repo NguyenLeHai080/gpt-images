@@ -6,6 +6,9 @@ export interface CheckboxProps {
   label?: React.ReactNode;
   description?: React.ReactNode;
   disabled?: boolean;
+  indeterminate?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'brand' | 'purple' | 'sky' | 'emerald';
   id?: string;
   className?: string;
 }

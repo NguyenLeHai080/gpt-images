@@ -1,4 +1,4 @@
-﻿from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,7 +14,12 @@ from app.modules.auth.api import router as auth_router
 from app.modules.dashboard.api import router as dashboard_router
 from app.modules.api_keys.api import router as api_keys_router
 from app.modules.billing.api import router as billing_router
-
+from app.modules.accounts.api import router as accounts_router
+from app.modules.permissions.api import router as permissions_router
+from app.modules.generations.api import router as generations_router
+from app.modules.packages.api import router as packages_router
+from app.modules.pricing.api import router as pricing_router
+from app.modules.tools.api import router as tools_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialize database tables and seed initial data
@@ -80,11 +85,37 @@ async def validation_exception_handler(request, exc):
         }
     )
 
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "code": "INTERNAL_SERVER_ERROR",
+            "message": str(exc) or "Lỗi máy chủ nội bộ",
+            "data": None,
+            "error": {"code": "INTERNAL_SERVER_ERROR", "message": str(exc), "details": None}
+        }
+    )
+
 # Mount Modular Routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(dashboard_router, prefix=settings.API_V1_STR)
 app.include_router(api_keys_router, prefix=settings.API_V1_STR)
 app.include_router(billing_router, prefix=settings.API_V1_STR)
+app.include_router(accounts_router, prefix=settings.API_V1_STR)
+app.include_router(permissions_router, prefix=settings.API_V1_STR)
+app.include_router(generations_router, prefix=settings.API_V1_STR)
+app.include_router(packages_router, prefix=settings.API_V1_STR)
+app.include_router(pricing_router, prefix=settings.API_V1_STR)
+app.include_router(tools_router, prefix=settings.API_V1_STR)
+# Mount thêm không prefix để hỗ trợ chuẩn OpenAI SDK client (base_url: http://127.0.0.1:8001/v1)
+app.include_router(generations_router)
+
+import os
+from fastapi.staticfiles import StaticFiles
+os.makedirs(settings.REFERENCES_UPLOAD_DIR, exist_ok=True)
+app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 @app.get("/")
 def root():

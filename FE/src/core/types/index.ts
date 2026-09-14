@@ -13,9 +13,11 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'MEMBER';
-  avatar_url: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'DEVELOPER' | 'MEMBER';
+  avatar_url?: string;
   company_name: string;
+  is_active?: boolean;
+  permissions?: string[];
 }
 
 export interface NavItem {

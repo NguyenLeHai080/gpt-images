@@ -18,3 +18,40 @@ class TransactionItem(BaseModel):
 class TopupRequest(BaseModel):
     amount: int
     gateway: str = "SePay"
+
+class BankAccountItem(BaseModel):
+    id: str
+    bank_name: str
+    bank_code: str  # e.g. "CTG", "MB", "TCB"
+    account_number: str
+    account_holder: str
+    branch: str
+    qr_template: str = "compact2"
+    is_primary: bool = True
+    is_active: bool = True
+
+class SepayTransactionItem(BaseModel):
+    id: str
+    gateway: str
+    transaction_date: str
+    account_number: str
+    sub_account: Optional[str] = None
+    amount_in: float
+    amount_out: float = 0.0
+    accumulated: float
+    code: Optional[str] = None
+    transaction_content: str
+    reference_number: str
+    status: str = "COMPLETED"
+
+class CreditConfigItem(BaseModel):
+    min_deposit_amount: float = 50000.0
+    max_deposit_amount: float = 50000000.0
+    credit_exchange_rate: float = 1.0  # 1 VND = 1 Credit
+    low_balance_warning_threshold: float = 30000.0
+    bonus_tier_1_threshold: float = 1000000.0  # Nạp >= 1tr tặng 5%
+    bonus_tier_1_pct: float = 5.0
+    bonus_tier_2_threshold: float = 3000000.0  # Nạp >= 3tr tặng 10%
+    bonus_tier_2_pct: float = 10.0
+    auto_reconcile_sepay: bool = True
+    allow_negative_balance: bool = False

@@ -6,4 +6,7 @@ export interface ApiKeyItem {
   created_at: string;
   last_used: string;
   rate_limit: string;
+  user_id?: string;
+  raw_key?: string;
 }
+
