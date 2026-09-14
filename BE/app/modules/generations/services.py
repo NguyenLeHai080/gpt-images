@@ -221,8 +221,12 @@ class GenerationService:
         )
         mapped_qual = provider_client.normalize_quality(getattr(request, 'quality', 'medium'))
         
-        # Chuẩn hóa reference / references
+        # Chuẩn hóa reference / references / sourceImages
         ref_list = []
+        if getattr(request, 'sourceImages', None) and isinstance(request.sourceImages, list):
+            ref_list.extend([str(r).strip() for r in request.sourceImages if r and str(r).strip()])
+        if getattr(request, 'source_images', None) and isinstance(request.source_images, list):
+            ref_list.extend([str(r).strip() for r in request.source_images if r and str(r).strip()])
         if request.references and isinstance(request.references, list):
             ref_list.extend([str(r).strip() for r in request.references if r and str(r).strip()])
         if request.reference and isinstance(request.reference, str) and request.reference.strip() and request.reference.strip() not in ref_list:

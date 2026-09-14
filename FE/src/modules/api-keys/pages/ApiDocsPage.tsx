@@ -94,16 +94,28 @@ export const ApiDocsPage: React.FC = () => {
   );
 
   const CODE_EXAMPLES = {
-    curl: `curl -X POST "${API_BASE_URL}/images/generations" \\
+    curl: `# 1. Tạo ảnh từ chữ (Text-to-Image)
+curl -X POST "${API_BASE_URL}/images/generations" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "prompt": "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
     "model": "gpt-image-2",
-    "resolution": "2k",
-    "quality": "high",
-    "aspect_ratio": "1:1",
-    "force_refresh": false
+    "resolution": "1k",
+    "quality": "medium",
+    "aspect_ratio": "1:1"
+  }'
+
+# 2. Chỉnh sửa theo ảnh mẫu (Image-to-Image / Edit)
+# Cổng API tự động kích hoạt pipeline mode="edit" tốc độ cao khi có ảnh tham chiếu
+curl -X POST "${API_BASE_URL}/images/generations" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "prompt": "Thêm một chú bướm nhiều màu sắc bay trên đầu chú chó",
+    "model": "gpt-image-2",
+    "reference": "https://domain.com/photo.jpg",
+    "aspect_ratio": "1:1"
   }'`,
 
     python: `import requests
@@ -113,21 +125,26 @@ headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
 }
+
+# 1. Tạo ảnh từ chữ (Text-to-Image)
 payload = {
     "prompt": "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
     "model": "gpt-image-2",
-    "resolution": "2k",      # '1k' | '2k' | '4k'
-    "quality": "high",        # 'low' | 'medium' | 'high'
+    "resolution": "1k",       # '1k' | '2k' | '4k'
+    "quality": "medium",      # 'medium' (Mặc định) | 'high' | 'low'
     "aspect_ratio": "1:1",    # '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
     "force_refresh": False
 }
+
+# 2. Hoặc tạo ảnh theo ảnh mẫu (Image-to-Image): Thêm trường 'reference' hoặc 'references'
+# payload["reference"] = "https://your-domain.com/sample.jpg"
 
 response = requests.post(url, json=payload, headers=headers)
 data = response.json()
 
 if data.get("success"):
     print("Ảnh hoàn tất:", data["data"]["image_url"])
-    print("Chi phí:", data["data"]["charge_amount"], "VND")
+    print("Chi phí:", data["data"]["charged_amount"], "VND")
 else:
     print("Lỗi:", data.get("message"))`,
 
@@ -142,10 +159,10 @@ async function generateImage() {
     body: JSON.stringify({
       prompt: 'Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K',
       model: 'gpt-image-2',
-      resolution: '2k',
-      quality: 'high',
+      resolution: '1k',
+      quality: 'medium', // 'medium' (mặc định) | 'high' | 'low'
       aspect_ratio: '1:1',
-      force_refresh: false,
+      // reference: 'https://domain.com/sample.jpg', // Bỏ ghi chú nếu dùng Image-to-Image
     }),
   });
 
@@ -166,9 +183,10 @@ $ch = curl_init();
 $payload = [
     "prompt" => "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
     "model" => "gpt-image-2",
-    "resolution" => "2k",
-    "quality" => "high",
+    "resolution" => "1k",
+    "quality" => "medium", // 'medium' (Mặc định) | 'high' | 'low'
     "aspect_ratio" => "1:1",
+    // "reference" => "https://domain.com/sample.jpg", // Kích hoạt Image-to-Image
     "force_refresh" => false
 ];
 
@@ -203,8 +221,8 @@ if ($result && $result['success']) {
     "status": "SUCCEEDED",
     "prompt": "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
     "model": "gpt-image-2",
-    "resolution": "2k",
-    "quality": "high",
+    "resolution": "1k",
+    "quality": "medium",
     "aspect_ratio": "1:1",
     "image_url": "${API_BASE_URL}/generations/jobs/job_54c50aaec15749b9/image",
     "charged_amount": 150.0,
@@ -446,13 +464,13 @@ if ($result && $result['success']) {
               <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-2">
                 <span className="text-xs font-bold text-slate-800 block">Chất lượng (Quality):</span>
                 <ul className="text-xs space-y-1.5 text-slate-600">
-                  <li className="flex items-center justify-between font-bold text-purple-700">
-                    <span><code>"high"</code>: Chi tiết tối đa</span>
-                    <span className="text-[10px] bg-purple-100 px-1.5 rounded">Mặc định</span>
+                  <li className="flex items-center justify-between font-bold text-emerald-700">
+                    <span><code>"medium"</code>: Tiêu chuẩn</span>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 rounded">⭐️ Mặc định</span>
                   </li>
                   <li className="flex items-center justify-between">
-                    <span><code>"medium"</code>: Tiêu chuẩn</span>
-                    <span className="text-[10px] text-slate-400 font-semibold">Cân bằng</span>
+                    <span><code>"high"</code>: Chi tiết tối đa</span>
+                    <span className="text-[10px] text-purple-700 bg-purple-50 px-1.5 rounded">Ultra HD</span>
                   </li>
                   <li className="flex items-center justify-between">
                     <span><code>"low"</code>: Tối ưu tốc độ</span>
@@ -475,6 +493,13 @@ if ($result && $result['success']) {
               </span>
             </div>
 
+            <div className="p-3 bg-brand-50/80 rounded-xl border border-brand-200 text-xs text-brand-900 flex items-start gap-2">
+              <Sparkles size={16} className="text-brand-600 shrink-0 mt-0.5" />
+              <div>
+                <strong>Tự động nhận diện Chế độ (Smart Auto-Detection):</strong> Khi gửi kèm ảnh mẫu qua <code>reference</code>, <code>references</code> hoặc <code>sourceImages</code>, hệ thống sẽ tự động kích hoạt pipeline <strong>Chỉnh sửa ảnh theo mẫu (Image-to-Image Edit)</strong>, tự động chuẩn hóa kích thước ảnh tối ưu tốc độ và tránh triệt để lỗi timeout.
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
@@ -492,7 +517,7 @@ if ($result && $result['success']) {
                     <td className="p-3 font-mono text-slate-500">string</td>
                     <td className="p-3 font-mono text-slate-400">-</td>
                     <td className="p-3"><span className="text-rose-600 font-bold">Có</span></td>
-                    <td className="p-3">Mô tả chi tiết hình ảnh cần sinh (tối đa 4,000 ký tự).</td>
+                    <td className="p-3">Mô tả chi tiết hình ảnh cần sinh hoặc nội dung cần chỉnh sửa trên ảnh mẫu (hỗ trợ Tiếng Việt & Tiếng Anh).</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-mono font-bold text-slate-800">model</td>
@@ -511,23 +536,37 @@ if ($result && $result['success']) {
                   <tr>
                     <td className="p-3 font-mono font-bold text-slate-800">quality</td>
                     <td className="p-3 font-mono text-slate-500">string</td>
-                    <td className="p-3 font-mono text-slate-500">"high"</td>
+                    <td className="p-3 font-mono text-slate-500">"medium"</td>
                     <td className="p-3 text-slate-400">Không</td>
-                    <td className="p-3">Mức độ chi tiết lấy mẫu: <code>"low"</code>, <code>"medium"</code>, <code>"high"</code>.</td>
+                    <td className="p-3">Mức độ chi tiết render: <code>"medium"</code> (chuẩn mặc định), <code>"high"</code> (tối đa), <code>"low"</code> (nhanh).</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-mono font-bold text-slate-800">aspect_ratio</td>
                     <td className="p-3 font-mono text-slate-500">string</td>
                     <td className="p-3 font-mono text-slate-500">"1:1"</td>
                     <td className="p-3 text-slate-400">Không</td>
-                    <td className="p-3">Tỷ lệ khung hình: <code>"1:1"</code> (Vuông), <code>"16:9"</code> (Ngang), <code>"9:16"</code> (Dọc).</td>
+                    <td className="p-3">Tỷ lệ khung hình: <code>"1:1"</code> (Vuông), <code>"16:9"</code> (Ngang), <code>"9:16"</code> (Dọc), <code>"4:3"</code>, <code>"3:4"</code>.</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-mono font-bold text-slate-800">reference</td>
-                    <td className="p-3 font-mono text-slate-500">string (URL)</td>
+                    <td className="p-3 font-mono text-slate-500">string</td>
                     <td className="p-3 font-mono text-slate-400">null</td>
                     <td className="p-3 text-slate-400">Không</td>
-                    <td className="p-3">Link URL ảnh gốc để tạo biến thể (Image-to-Image).</td>
+                    <td className="p-3">Link URL hoặc Base64 Data URI của ảnh mẫu để sửa ảnh / tạo biến thể (Image-to-Image).</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-mono font-bold text-slate-800">references / sourceImages</td>
+                    <td className="p-3 font-mono text-slate-500">array[string]</td>
+                    <td className="p-3 font-mono text-slate-400">null</td>
+                    <td className="p-3 text-slate-400">Không</td>
+                    <td className="p-3">Danh sách URL hoặc Base64 Data URI ảnh nguồn khi cần chỉnh sửa từ nhiều ảnh mẫu.</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-mono font-bold text-slate-800">mode</td>
+                    <td className="p-3 font-mono text-slate-500">string</td>
+                    <td className="p-3 font-mono text-slate-500">"generation"</td>
+                    <td className="p-3 text-slate-400">Không</td>
+                    <td className="p-3">Chế độ tạo ảnh (<code>"generation"</code> cho chữ sang ảnh, hoặc <code>"edit"</code> cho chỉnh sửa ảnh). Hệ thống tự động nhận diện nếu có ảnh tham chiếu.</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-mono font-bold text-slate-800">force_refresh</td>
