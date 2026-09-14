@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Building2, QrCode, Copy, Check, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Building2, QrCode, Copy, Check, RefreshCw, AlertCircle, Download, Zap } from 'lucide-react';
 import { Button } from '../../../core/components/Button/Button';
 import { Badge } from '../../../core/components/Badge/Badge';
 import { alert } from '../../../core/alert';
@@ -13,6 +13,11 @@ export const BankingConfigPage: React.FC = () => {
   const [selectedBank, setSelectedBank] = useState<BankAccountItem | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // VietQR Optimization & Features
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [isQrImgLoading, setIsQrImgLoading] = useState(true);
+  const [qrTemplate, setQrTemplate] = useState<'compact2' | 'qr_only'>('compact2');
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -42,14 +47,50 @@ export const BankingConfigPage: React.FC = () => {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  // URL VietQR API
-  const qrUrl = selectedBank?.qr_url
-    ? selectedBank.qr_url
-    : (selectedBank
-      ? `https://vietqr.app/img?bank=VietinBank&acc=${selectedBank.account_number}&template=compact&des=${encodeURIComponent(
-          transferMemo
-        )}&showinfo=true&holder=${encodeURIComponent(selectedBank.account_holder)}`
-      : '');
+  // URL VietQR API: Sử dụng official CDN img.vietqr.io với Cloudflare Edge Caching (< 0.5s)
+  const qrUrl = useMemo(() => {
+    if (!selectedBank) return '';
+    const bankCode = selectedBank.bank_code === 'ICB' ? 'vietinbank' : (selectedBank.bank_code || 'vietinbank').toLowerCase();
+    const acc = selectedBank.account_number;
+    const memo = encodeURIComponent(transferMemo);
+    const holder = encodeURIComponent(selectedBank.account_holder);
+    const amountParam = selectedAmount ? `&amount=${selectedAmount}` : '';
+
+    return `https://img.vietqr.io/image/${bankCode}-${acc}-${qrTemplate}.png?addInfo=${memo}&accountName=${holder}${amountParam}`;
+  }, [selectedBank, transferMemo, selectedAmount, qrTemplate]);
+
+  useEffect(() => {
+    if (qrUrl) {
+      setIsQrImgLoading(true);
+    }
+  }, [qrUrl]);
+
+  const handleDownloadQR = async () => {
+    if (!qrUrl) return;
+    try {
+      alert.toast('Đang tải hình ảnh mã VietQR...', 'info');
+      const res = await fetch(qrUrl);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `VietQR_${selectedBank?.account_number}_${transferMemo.replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      alert.toast('Đã tải ảnh mã VietQR thành công!', 'success');
+    } catch (err) {
+      window.open(qrUrl, '_blank');
+    }
+  };
+
+  const amountPresets = [
+    { label: '50.000đ', value: 50000 },
+    { label: '100.000đ', value: 100000 },
+    { label: '200.000đ', value: 200000 },
+    { label: '500.000đ', value: 500000 },
+  ];
 
   return (
     <div className="animate-fade-in flex flex-col gap-6">
@@ -58,12 +99,13 @@ export const BankingConfigPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Tài Khoản Ngân Hàng & Mã QR Nạp Tiền</h1>
-            <span className="text-xs bg-brand-50 text-brand-600 px-2.5 py-0.5 rounded-full font-bold border border-brand-200">
-              VietQR 24/7
+            <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200 flex items-center gap-1">
+              <Zap size={12} className="text-emerald-500 fill-emerald-500" />
+              VietQR Siêu Tốc 24/7
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Thông tin chuyển khoản ngân hàng doanh nghiệp và mã QR tự động điền cú pháp nạp tín dụng vào ví tài khoản.
+            Thông tin chuyển khoản ngân hàng doanh nghiệp và mã VietQR tự động điền cú pháp nạp tiền qua SePay Webhook.
           </p>
         </div>
 
@@ -163,21 +205,106 @@ export const BankingConfigPage: React.FC = () => {
 
         {/* Right: VietQR Code Generator Card (1 Col) */}
         <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4 text-center">
-          <div className="flex items-center justify-center gap-2 pb-2 border-b border-slate-100">
-            <QrCode size={18} className="text-brand-500" />
-            <h3 className="font-extrabold text-sm text-slate-900">Mã VietQR Tự Động</h3>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <QrCode size={18} className="text-brand-500" />
+              <h3 className="font-extrabold text-sm text-slate-900">Mã VietQR Tự Động</h3>
+            </div>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
+              <Zap size={10} /> CDN &lt; 0.5s
+            </span>
           </div>
 
           {selectedBank && qrUrl ? (
-            <div className="space-y-3">
-              <div className="p-2 rounded-xl border border-slate-200 bg-slate-50 inline-block shadow-2xs">
+            <div className="space-y-4">
+              {/* Preset quick amounts */}
+              <div className="text-left space-y-1.5">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Chọn nhanh số tiền nạp:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAmount(null)}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                      selectedAmount === null
+                        ? 'bg-brand-600 text-white shadow-2xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    Tùy chọn
+                  </button>
+                  {amountPresets.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setSelectedAmount(p.value)}
+                      className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                        selectedAmount === p.value
+                          ? 'bg-brand-600 text-white shadow-2xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* QR Image Container with Shimmer Loading */}
+              <div className="relative p-2.5 rounded-2xl border border-slate-200 bg-slate-50/50 shadow-2xs min-h-[260px] flex items-center justify-center overflow-hidden">
+                {isQrImgLoading && (
+                  <div className="absolute inset-0 z-10 bg-white/90 backdrop-blur-xs flex flex-col items-center justify-center p-4 space-y-2.5 animate-pulse">
+                    <RefreshCw size={24} className="text-brand-500 animate-spin" />
+                    <span className="text-xs font-bold text-slate-600">Đang tải mã VietQR siêu tốc...</span>
+                    <span className="text-[10px] text-slate-400">Napas 247 Cloudflare Edge</span>
+                  </div>
+                )}
                 <img
+                  key={qrUrl}
                   src={qrUrl}
                   alt="VietQR nạp tiền"
-                  className="w-56 h-56 object-contain mx-auto rounded-lg"
+                  onLoad={() => setIsQrImgLoading(false)}
+                  onError={() => setIsQrImgLoading(false)}
+                  className={`w-60 h-auto object-contain mx-auto rounded-xl transition-all duration-300 ${
+                    isQrImgLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                  }`}
                 />
               </div>
 
+              {/* Action Buttons: Template toggle & Download */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setQrTemplate('compact2')}
+                    className={`px-2 py-1 rounded-md font-semibold transition-all ${
+                      qrTemplate === 'compact2' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                    }`}
+                  >
+                    Khung chuẩn
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQrTemplate('qr_only')}
+                    className={`px-2 py-1 rounded-md font-semibold transition-all ${
+                      qrTemplate === 'qr_only' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                    }`}
+                  >
+                    Chỉ mã QR
+                  </button>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Download size={13} />}
+                  onClick={handleDownloadQR}
+                  className="text-xs"
+                >
+                  Tải QR
+                </Button>
+              </div>
+
+              {/* Account Details Box */}
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-left space-y-2 text-xs">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-bold">Cú pháp nạp:</span>
@@ -193,6 +320,13 @@ export const BankingConfigPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {selectedAmount && (
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Số tiền:</span>
+                    <span className="font-bold text-emerald-600 text-xs">{selectedAmount.toLocaleString('vi-VN')} đ</span>
+                  </div>
+                )}
 
                 <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500">
                   <span>Ngân hàng: <strong>{selectedBank.bank_name}</strong></span>

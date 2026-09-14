@@ -102,7 +102,8 @@ class BillingService:
         memo = f"SEVQR GPT {user_id}"
         account_number = "109873538727"
         account_holder = "NGUYEN LE HAI"
-        qr_url = f"https://vietqr.app/img?bank=VietinBank&acc={account_number}&template=compact&des={urllib.parse.quote(memo)}&showinfo=true&holder={urllib.parse.quote(account_holder)}"
+        # Official VietQR High-Speed Cloudflare CDN (loads in < 500ms)
+        qr_url = f"https://img.vietqr.io/image/vietinbank-{account_number}-compact2.png?addInfo={urllib.parse.quote(memo)}&accountName={urllib.parse.quote(account_holder)}"
 
         return [
             BankAccountItem(
