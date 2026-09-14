@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.core.responses import success_response
+from app.modules.billing.schemas import SepayWebhookPayload
 from app.modules.billing.services import billing_service
 
 router = APIRouter(prefix="/billing", tags=["Billing & Wallet"])
@@ -28,3 +29,20 @@ def get_sepay_transactions():
 def get_credit_config():
     config = billing_service.get_credit_config()
     return success_response(config.model_dump(), "Lấy cấu hình credit thành công")
+
+@router.post("/webhook/sepay")
+def receive_sepay_webhook(payload: SepayWebhookPayload):
+    """
+    Endpoint tiếp nhận Webhook giao dịch nạp tiền từ cổng SePay.
+    Tự động lọc theo cú pháp tiền tố 'GPT <USER_ID>'.
+    Nếu là giao dịch của web khác (Meridians) hoặc cá nhân, trả về 200 OK và bỏ qua an toàn.
+    """
+    return billing_service.process_sepay_webhook(payload)
+
+@router.post("/webhook")
+def receive_sepay_webhook_alias(payload: SepayWebhookPayload):
+    """
+    Alias endpoint cho SePay Webhook
+    """
+    return billing_service.process_sepay_webhook(payload)
+

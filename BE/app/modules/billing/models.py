@@ -24,3 +24,21 @@ class Transaction(Base):
     status = Column(String, default="success", nullable=False)
     description = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+class SepayWebhookLog(Base):
+    __tablename__ = "sepay_webhook_logs"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    sepay_id = Column(String, nullable=True)
+    gateway = Column(String, nullable=True)
+    account_number = Column(String, nullable=True)
+    transfer_type = Column(String, nullable=True)
+    transfer_amount = Column(Float, default=0.0, nullable=False)
+    accumulated = Column(Float, default=0.0, nullable=False)
+    content = Column(String, nullable=True)
+    reference_code = Column(String, nullable=True)
+    status = Column(String, default="PROCESSED", nullable=False)  # PROCESSED, IGNORED, ERROR
+    matched_user_id = Column(String, nullable=True)
+    raw_payload = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+

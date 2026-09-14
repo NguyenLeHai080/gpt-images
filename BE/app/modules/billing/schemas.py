@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from pydantic import BaseModel
 
 class WalletSummary(BaseModel):
@@ -43,6 +43,22 @@ class SepayTransactionItem(BaseModel):
     transaction_content: str
     reference_number: str
     status: str = "COMPLETED"
+
+class SepayWebhookPayload(BaseModel):
+    id: Optional[Any] = None
+    gateway: Optional[str] = "VietinBank"
+    transactionDate: Optional[str] = None
+    accountNumber: Optional[str] = None
+    code: Optional[str] = None
+    content: Optional[str] = ""
+    transferType: Optional[str] = "in"
+    transferAmount: Optional[float] = 0.0
+    accumulated: Optional[float] = 0.0
+    subAccount: Optional[str] = None
+    referenceCode: Optional[str] = None
+    reference_number: Optional[str] = None
+    description: Optional[str] = None
+
 
 class CreditConfigItem(BaseModel):
     min_deposit_amount: float = 50000.0
