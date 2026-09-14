@@ -144,7 +144,10 @@ class BillingService:
                         code=l.matched_user_id,
                         transaction_content=l.content or "",
                         reference_number=l.reference_code or f"REF_{l.id[:8]}",
-                        status="COMPLETED" if l.status == "PROCESSED" else l.status
+                        status="COMPLETED" if l.status == "PROCESSED" else l.status,
+                        provider_cost=round(float(l.transfer_amount or 0) * (120.0 / 150.0)),
+                        gross_profit=round(float(l.transfer_amount or 0) * (30.0 / 150.0)),
+                        images_count=int((l.transfer_amount or 0) // 150)
                     )
                     for l in logs
                 ]

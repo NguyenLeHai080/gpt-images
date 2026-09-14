@@ -46,6 +46,9 @@ class SepayTransactionItem(BaseModel):
     transaction_content: str
     reference_number: str
     status: str = "COMPLETED"
+    provider_cost: Optional[float] = 0.0
+    gross_profit: Optional[float] = 0.0
+    images_count: Optional[int] = 0
 
 class SepayWebhookPayload(BaseModel):
     id: Optional[Any] = None

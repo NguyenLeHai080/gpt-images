@@ -40,6 +40,9 @@ export interface SepayTransactionItem {
   transaction_content: string;
   reference_number: string;
   status: string;
+  provider_cost?: number;
+  gross_profit?: number;
+  images_count?: number;
 }
 
 export interface CreditConfigItem {
