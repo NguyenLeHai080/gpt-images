@@ -129,22 +129,37 @@ def get_financial_summary(
     """
     [ADMIN] Thống kê dòng tiền, doanh thu bán ra 150đ, vốn NCC 120đ và lợi nhuận gộp
     """
+    user, _ = resolve_user_and_key(request, db)
+    if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
+        return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền xem dòng tiền và lợi nhuận", status_code=403)
     data = generation_service.get_financial_summary(db)
     return success_response(data.model_dump(), "Lấy báo cáo tài chính và dòng tiền thành công")
 
 @router.get("/generations/provider-status")
-def get_provider_status(request: Request):
+def get_provider_status(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """
-    Kiểm tra trạng thái kết nối tới hệ thống AI Cluster Engine và số dư quota
+    Kiểm tra trạng thái kết nối tới hệ thống AI Cluster Engine và số dư quota (Chỉ Admin)
     """
+    user, _ = resolve_user_and_key(request, db)
+    if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
+        return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền xem trạng thái nhà cung cấp", status_code=403)
     data = generation_service.get_provider_status()
     return success_response(data.model_dump(), "Lấy trạng thái AI Cluster Engine thành công")
 
 @router.post("/generations/provider-sync")
-def sync_provider():
+def sync_provider(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """
-    Đồng bộ lại số dư quota và trạng thái từ hệ thống AI Cluster Engine (bỏ qua bộ đệm cache)
+    Đồng bộ lại số dư quota và trạng thái từ hệ thống AI Cluster Engine (Chỉ Admin)
     """
+    user, _ = resolve_user_and_key(request, db)
+    if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
+        return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền đồng bộ nhà cung cấp", status_code=403)
     data = generation_service.get_provider_status(force_refresh=True)
     return success_response(data.model_dump(), "Đồng bộ thành công số dư từ AI Cluster Engine")
 

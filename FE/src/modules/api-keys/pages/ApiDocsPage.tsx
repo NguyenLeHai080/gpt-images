@@ -85,9 +85,13 @@ export const ApiDocsPage: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const API_BASE_URL = window.location.origin.includes('517')
-    ? 'http://127.0.0.1:8001/api/v1'
-    : `${window.location.origin}/api/v1`;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
+    window.location.origin.includes('nexoratech.com.vn')
+      ? 'https://api-gpt-images.nexoratech.com.vn/api/v1'
+      : (window.location.origin.includes('517')
+          ? 'http://127.0.0.1:87/api/v1'
+          : `${window.location.origin}/api/v1`)
+  );
 
   const CODE_EXAMPLES = {
     curl: `curl -X POST "${API_BASE_URL}/images/generations" \\
@@ -113,55 +117,51 @@ payload = {
     "prompt": "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
     "model": "gpt-image-2",
     "resolution": "2k",      # '1k' | '2k' | '4k'
-    "quality": "high",       # 'low' | 'medium' | 'high'
-    "aspect_ratio": "1:1",   # '1:1' | '16:9' | '9:16'
-    "force_refresh": False   # True: bỏ qua cache để tạo ảnh biến thể mới
+    "quality": "high",        # 'low' | 'medium' | 'high'
+    "aspect_ratio": "1:1",    # '1:1' | '16:9' | '9:16' | '4:3' | '3:4'
+    "force_refresh": False
 }
 
-response = requests.post(url, headers=headers, json=payload)
+response = requests.post(url, json=payload, headers=headers)
 data = response.json()
 
 if data.get("success"):
-    image_url = data["data"]["image_url"]
-    is_cached = data["data"]["is_cached"]
-    print(f"Ảnh tạo thành công: {image_url}")
-    print(f"Trạng thái Cache: {'⚡ Cache Hit (25ms)' if is_cached else 'Tạo mới từ NCC'}")
+    print("Ảnh hoàn tất:", data["data"]["image_url"])
+    print("Chi phí:", data["data"]["charge_amount"], "VND")
 else:
-    print(f"Lỗi: {data.get('message')}")`,
+    print("Lỗi:", data.get("message"))`,
 
-    nodejs: `import fetch from 'node-fetch';
-
-const generateImage = async () => {
+    nodejs: `// Node.js 18+ (Fetch API chuẩn)
+async function generateImage() {
   const response = await fetch('${API_BASE_URL}/images/generations', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer YOUR_API_KEY',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       prompt: 'Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K',
       model: 'gpt-image-2',
-      resolution: '2k',      // '1k' | '2k' | '4k'
-      quality: 'high',       // 'low' | 'medium' | 'high'
+      resolution: '2k',
+      quality: 'high',
       aspect_ratio: '1:1',
-      force_refresh: false
-    })
+      force_refresh: false,
+    }),
   });
 
-  const result = await response.json();
-  if (result.success) {
-    console.log('Link ảnh:', result.data.image_url);
-    console.log('Thời gian xử lý:', result.data.latency_ms, 'ms');
+  const data = await response.json();
+  if (data.success) {
+    console.log('URL ảnh:', data.data.image_url);
+    console.log('Thời gian xử lý:', data.data.latency_ms, 'ms');
   } else {
-    console.error('Lỗi:', result.message);
+    console.error('Lỗi gọi API:', data.message);
   }
-};
+}
 
 generateImage();`,
 
     php: `<?php
-
-$curl = curl_init();
+$ch = curl_init();
 
 $payload = [
     "prompt" => "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
@@ -172,7 +172,7 @@ $payload = [
     "force_refresh" => false
 ];
 
-curl_setopt_array($curl, [
+curl_setopt_array($ch, [
     CURLOPT_URL => "${API_BASE_URL}/images/generations",
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST => true,
@@ -183,8 +183,8 @@ curl_setopt_array($curl, [
     ],
 ]);
 
-$response = curl_exec($curl);
-curl_close($curl);
+$response = curl_exec($ch);
+curl_close($ch);
 
 $result = json_decode($response, true);
 if ($result && $result['success']) {
@@ -197,17 +197,21 @@ if ($result && $result['success']) {
 
   const SAMPLE_RESPONSE = `{
   "success": true,
-  "message": "Tạo ảnh thành công từ model gpt-image-2!",
+  "message": "Tạo hình ảnh thành công",
   "data": {
     "job_id": "job_54c50aaec15749b9",
-    "image_url": "http://127.0.0.1:8001/api/v1/generations/jobs/job_54c50aaec15749b9/image",
-    "aspect_ratio": "2048x2048",
+    "status": "SUCCEEDED",
+    "prompt": "Một chú mèo phi hành gia trong không gian neon, chi tiết điện ảnh 8K",
+    "model": "gpt-image-2",
     "resolution": "2k",
     "quality": "high",
+    "aspect_ratio": "1:1",
+    "image_url": "${API_BASE_URL}/generations/jobs/job_54c50aaec15749b9/image",
+    "charged_amount": 150.0,
+    "currency": "VND",
     "is_cached": true,
     "latency_ms": 26,
-    "charge_amount": 150.0,
-    "created_at": "2026-09-13T23:38:32.481912"
+    "created_at": "2026-09-14T09:30:00"
   }
 }`;
 

@@ -37,7 +37,14 @@ export const PricingPage: React.FC = () => {
   const [selectedSpecModel, setSelectedSpecModel] = useState<string>('gpt-image-2');
 
   // Active Tab: 'pricing' | 'specs' | 'simulator'
-  const [activeTab, setActiveTab] = useState<'pricing' | 'specs' | 'simulator'>('pricing');
+  const [activeTab, setActiveTab] = useState<'pricing' | 'specs' | 'simulator'>(isAdmin ? 'pricing' : 'specs');
+
+  // Auto-switch to specs if non-admin is on pricing tab
+  useEffect(() => {
+    if (!isAdmin && activeTab === 'pricing') {
+      setActiveTab('specs');
+    }
+  }, [isAdmin, activeTab]);
 
   // Simulator State
   const [simModel, setSimModel] = useState<string>('gpt-image-2');
@@ -290,10 +297,10 @@ export const PricingPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Bảng Giá Model & Quản Lý Lợi Nhuận
+              {isAdmin ? 'Bảng Giá Model & Quản Lý Lợi Nhuận' : 'Bảng Giá & Thông Số Model AI'}
             </h1>
             <span className="text-xs bg-brand-50 text-brand-600 px-2.5 py-0.5 rounded-full font-bold border border-brand-200">
-              Cấu hình dịch vụ
+              {isAdmin ? 'Cấu hình dịch vụ' : 'Bảng giá dịch vụ'}
             </span>
             {isSuperAdmin ? (
               <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-full font-bold border border-purple-200 flex items-center gap-1">
@@ -308,7 +315,9 @@ export const PricingPage: React.FC = () => {
             ) : null}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Thiết lập giá vốn trả Nhà cung cấp, giá bán API thu từ khách hàng, số token quy đổi cho các mô hình AI.
+            {isAdmin
+              ? 'Thiết lập giá vốn trả Nhà cung cấp, giá bán API thu từ khách hàng, số token quy đổi cho các mô hình AI.'
+              : 'Xem thông số kỹ thuật, độ phân giải thực tế và công cụ mô phỏng dự toán ngân sách sử dụng các mô hình AI.'}
           </p>
         </div>
 
@@ -413,18 +422,20 @@ export const PricingPage: React.FC = () => {
 
       {/* Navigation Tabs Bar */}
       <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200 w-fit">
-        <button
-          type="button"
-          onClick={() => setActiveTab('pricing')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-            activeTab === 'pricing'
-              ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/60'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <Sliders size={14} className={activeTab === 'pricing' ? 'text-brand-500' : ''} />
-          <span>Bảng Cấu Hình Giá & Lợi Nhuận</span>
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('pricing')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              activeTab === 'pricing'
+                ? 'bg-white text-slate-900 shadow-2xs border border-slate-200/60'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sliders size={14} className={activeTab === 'pricing' ? 'text-brand-500' : ''} />
+            <span>Bảng Cấu Hình Giá & Lợi Nhuận</span>
+          </button>
+        )}
 
         <button
           type="button"
@@ -453,8 +464,8 @@ export const PricingPage: React.FC = () => {
         </button>
       </div>
 
-      {/* TAB 1: Bảng Cấu Hình Giá & Lợi Nhuận */}
-      {activeTab === 'pricing' && (
+      {/* TAB 1: Bảng Cấu Hình Giá & Lợi Nhuận (Chỉ Quản Trị Viên) */}
+      {isAdmin && activeTab === 'pricing' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100">
             <div>

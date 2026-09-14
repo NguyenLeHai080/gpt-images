@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Menu, Search, Plus, Bell, BookOpen, Globe, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import avatarAdmin from '../../assets/img/avatar-admin.svg';
@@ -14,9 +15,18 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreateModal,
   onNavigateToDocs,
 }) => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+  const handleDocsClick = () => {
+    if (onNavigateToDocs) {
+      onNavigateToDocs();
+    } else {
+      navigate('/app/api-docs');
+    }
+  };
 
   return (
     <header className="mf-header">
@@ -72,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           className="mf-icon-action-btn mf-header-docs-btn"
           title="Tài liệu hướng dẫn (DOCS)"
-          onClick={onNavigateToDocs}
+          onClick={handleDocsClick}
         >
           <BookOpen size={18} />
         </button>

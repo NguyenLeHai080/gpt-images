@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
@@ -37,6 +37,8 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Backend API cho MintForge Business Suite - Quản trị và vận hành API, ví và tài chính doanh nghiệp với PostgreSQL",
+    docs_url="/api-docs",
+    redoc_url="/redoc",
     lifespan=lifespan
 )
 
@@ -117,6 +119,10 @@ from fastapi.staticfiles import StaticFiles
 os.makedirs(settings.REFERENCES_UPLOAD_DIR, exist_ok=True)
 app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
+@app.get("/docs", include_in_schema=False)
+def redirect_docs():
+    return RedirectResponse(url="/api-docs")
+
 @app.get("/")
 def root():
     return {
@@ -124,7 +130,7 @@ def root():
         "service": settings.PROJECT_NAME,
         "database": "PostgreSQL 16 (pgsql)",
         "version": settings.VERSION,
-        "docs_url": "/docs"
+        "docs_url": "/api-docs"
     }
 
 @app.get("/health")

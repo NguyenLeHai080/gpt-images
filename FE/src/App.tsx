@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './core/hooks/useAuth';
 import { ProtectedRoute } from './core/routes/ProtectedRoute';
 import { MainLayout } from './core/layout/MainLayout';
@@ -21,6 +21,39 @@ import { StudioPage } from './modules/generations/pages/StudioPage';
 import { PnLManagementPage } from './modules/generations/pages/PnLManagementPage';
 import { ErrorBoundary, ErrorPage, ErrorState } from './core/components/ErrorState';
 
+const PublicApiDocsWrapper: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-500 to-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+            MF
+          </div>
+          <div>
+            <span className="font-black text-sm text-slate-900 tracking-tight">MintForge Business Suite</span>
+            <span className="text-[10px] text-slate-400 block -mt-0.5">Developer API Documentation</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <Link to="/auth/login">
+            <button className="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+              Đăng nhập
+            </button>
+          </Link>
+          <Link to="/app/studio">
+            <button className="px-3.5 py-1.5 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition-colors shadow-xs">
+              Mở Studio
+            </button>
+          </Link>
+        </div>
+      </header>
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <ApiDocsPage />
+      </main>
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   return (
     <ErrorBoundary>
@@ -30,7 +63,7 @@ export const App: React.FC = () => {
             {/* Public Auth Routes */}
             <Route path="/auth/login" element={<LoginPage />} />
             <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-            <Route path="/api-docs" element={<Navigate to="/app/api-docs" replace />} />
+            <Route path="/api-docs" element={<PublicApiDocsWrapper />} />
 
             {/* Standard Protected App Routes with /app Prefix */}
             <Route
