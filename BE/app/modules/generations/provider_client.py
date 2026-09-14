@@ -20,7 +20,7 @@ class ProviderClient:
         self.ssl_context.verify_mode = ssl.CERT_NONE
         
         self.access_token: Optional[str] = None
-        self.raw_api_key: Optional[str] = os.getenv("UPSTREAM_PROVIDER_KEY", "sk-HJMEUHF7MPUXCYJFHW5R5CNSRGV5XHQQOC5EHKU2LWXUBOOLDHGA====")
+        self.raw_api_key: Optional[str] = os.getenv("UPSTREAM_PROVIDER_KEY", "sk-5BZ6LD4DPV5BW75GFNVL4BBOMOHKXDOK37LLQROO7NNVXXSXQ55A====")
         self.token_expiry: float = 0.0
 
 
@@ -263,6 +263,33 @@ class ProviderClient:
             headers=headers,
             timeout=120
         )
+
+        # Cơ chế Self-Healing: Nếu NCC báo "invalid or disabled API key", tự động re-auth và cấp key mới ngay lập tức
+        err_str = str(resp.get("error", resp.get("message", resp))).lower()
+        if status in (400, 401, 403) and ("invalid or disabled api key" in err_str or "api key" in err_str or status == 401):
+            print(f"[ProviderClient] Phát hiện Provider Key không hợp lệ ({err_str}). Đang tự động cấp mới từ NCC...")
+            try:
+                token = self.ensure_auth()
+                k_status, keys_resp = self._make_request(
+                    "/api/v1/api-keys",
+                    method="POST",
+                    payload={"name": f"MintForge_Auto_{int(time.time())}", "quota_mode": "unlimited"},
+                    headers={"Authorization": f"Bearer {token}"}
+                )
+                if k_status in (200, 201) and "raw_key" in keys_resp:
+                    self.raw_api_key = keys_resp["raw_key"]
+                    active_key = self.raw_api_key
+                    headers["Authorization"] = f"Bearer {active_key}"
+                    print(f"[ProviderClient] Đã cấp key mới thành công ({self.raw_api_key[:12]}...). Đang thử lại yêu cầu tạo ảnh...")
+                    status, resp = self._make_request(
+                        "/v1/images/generations",
+                        method="POST",
+                        payload=payload,
+                        headers=headers,
+                        timeout=120
+                    )
+            except Exception as e:
+                print(f"[ProviderClient] Lỗi khi tự động cấp mới key: {e}")
 
         latency_ms = int((time.time() - start_time) * 1000)
         return status, resp, latency_ms
