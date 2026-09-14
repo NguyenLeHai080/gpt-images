@@ -63,8 +63,12 @@ class ApiClient {
         localStorage.removeItem('mf_access_token');
       }
       const errorData = await response.json().catch(() => null);
-      const err: any = new Error(errorData?.message || `HTTP Error ${response.status}`);
+      const message = errorData?.message 
+        || (typeof errorData?.detail === 'string' ? errorData.detail : errorData?.error?.message) 
+        || `HTTP Error ${response.status}`;
+      const err: any = new Error(message);
       err.status = response.status;
+      err.data = errorData;
       throw err;
     }
 
