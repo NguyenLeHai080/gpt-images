@@ -35,26 +35,16 @@ def login(payload: LoginRequest, request: Request):
     reset_login_attempts(client_ip, payload.email)
     return success_response(result.model_dump(), "Đăng nhập thành công")
 
-from app.core.security import decode_access_token
+from fastapi import Depends
+from app.core.dependencies import get_current_user as auth_required_user
+from app.modules.auth.models import User as UserModel
 
 @router.get("/me")
-def get_current_user(request: Request):
-    auth_header = request.headers.get("Authorization")
-    email = "admin@mintforge.vn"
-    
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.split(" ")[1]
-        payload = decode_access_token(token)
-        if payload and "sub" in payload:
-            email = payload["sub"]
-
-    user = auth_service.get_user_by_email(email)
-    if not user:
-        # Fallback to first available user
-        user = auth_service.get_user_by_email("admin@mintforge.vn")
-        if not user:
-            return error_response("NOT_FOUND", "Không tìm thấy người dùng")
-            
-    return success_response(user.model_dump(), "Lấy thông tin người dùng thành công")
+def get_current_user_profile(current_user: UserModel = Depends(auth_required_user)):
+    user_schema = auth_service.get_user_by_email(current_user.email)
+    if not user_schema:
+        return error_response("NOT_FOUND", "Không tìm thấy người dùng")
+        
+    return success_response(user_schema.model_dump(), "Lấy thông tin người dùng thành công")
 
 

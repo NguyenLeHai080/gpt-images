@@ -6,11 +6,20 @@ import { MainLayout } from './core/layout/MainLayout';
 import { LoginPage } from './modules/auth/pages/LoginPage';
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage';
 import { ApiKeysPage } from './modules/api-keys/pages/ApiKeysPage';
+import { ApiDocsPage } from './modules/api-keys/pages/ApiDocsPage';
 import { BillingPage } from './modules/billing/pages/BillingPage';
+import { BankingConfigPage } from './modules/billing/pages/BankingConfigPage';
+import { CreditConfigPage } from './modules/billing/pages/CreditConfigPage';
+import { SepayTransactionsPage } from './modules/billing/pages/SepayTransactionsPage';
+import { PackagesPage } from './modules/packages/pages/PackagesPage';
+import { PricingPage } from './modules/pricing/pages/PricingPage';
+import { ToolsPage } from './modules/tools/pages/ToolsPage';
 import { AccountsPage } from './modules/accounts/pages/AccountsPage';
 import { PermissionsPage } from './modules/permissions/pages/PermissionsPage';
+import { JobsLogPage } from './modules/generations/pages/JobsLogPage';
+import { StudioPage } from './modules/generations/pages/StudioPage';
+import { PnLManagementPage } from './modules/generations/pages/PnLManagementPage';
 import { ErrorBoundary, ErrorPage, ErrorState } from './core/components/ErrorState';
-import { DemoSwitcher } from './core/components/DemoSwitcher';
 
 export const App: React.FC = () => {
   return (
@@ -21,6 +30,7 @@ export const App: React.FC = () => {
             {/* Public Auth Routes */}
             <Route path="/auth/login" element={<LoginPage />} />
             <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+            <Route path="/api-docs" element={<Navigate to="/app/api-docs" replace />} />
 
             {/* Standard Protected App Routes with /app Prefix */}
             <Route
@@ -31,18 +41,65 @@ export const App: React.FC = () => {
                     <Routes>
                       <Route path="overview" element={<DashboardPage />} />
                       <Route path="dashboard" element={<Navigate to="/app/overview" replace />} />
-                      <Route path="api-keys" element={<ApiKeysPage />} />
+                      <Route path="jobs" element={<JobsLogPage />} />
+                      <Route path="studio" element={<StudioPage />} />
+                      <Route
+                        path="pnl"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+                            <PnLManagementPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="api-keys"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN', 'DEVELOPER']}>
+                            <ApiKeysPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route path="api-docs" element={<ApiDocsPage />} />
                       <Route path="billing" element={<BillingPage />} />
                       <Route path="wallet" element={<BillingPage />} />
-                      <Route path="banking" element={<BillingPage />} />
-                      <Route path="credit-config" element={<BillingPage />} />
-                      <Route path="sepay" element={<BillingPage />} />
-                      <Route path="accounts" element={<AccountsPage />} />
-                      <Route path="permissions" element={<PermissionsPage />} />
-                      <Route path="packages" element={<DashboardPage />} />
-                      <Route path="pricing" element={<DashboardPage />} />
-                      <Route path="tools" element={<DashboardPage />} />
+                      <Route
+                        path="banking"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+                            <BankingConfigPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="credit-config"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+                            <CreditConfigPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route path="sepay" element={<SepayTransactionsPage />} />
+                      <Route
+                        path="accounts"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+                            <AccountsPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="permissions"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+                            <PermissionsPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route path="packages" element={<PackagesPage />} />
+                      <Route path="pricing" element={<PricingPage />} />
+                      <Route path="tools" element={<ToolsPage />} />
                       <Route path="" element={<Navigate to="overview" replace />} />
+
                       <Route
                         path="*"
                         element={
@@ -71,8 +128,6 @@ export const App: React.FC = () => {
             {/* Global Catch-all: 404 Not Found Page */}
             <Route path="*" element={<ErrorPage code="404" />} />
           </Routes>
-
-          <DemoSwitcher />
         </BrowserRouter>
       </AuthProvider>
     </ErrorBoundary>

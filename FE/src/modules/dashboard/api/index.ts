@@ -104,9 +104,10 @@ export const FALLBACK_DASHBOARD_DATA: DashboardOverviewData = {
 };
 
 export const dashboardApi = {
-  getOverview: async (): Promise<ApiResponse<DashboardOverviewData>> => {
+  getOverview: async (userId?: string): Promise<ApiResponse<DashboardOverviewData>> => {
     try {
-      return await apiClient.get<DashboardOverviewData>('/dashboard/overview');
+      const url = userId && userId !== 'all' ? `/dashboard/overview?user_id=${userId}` : '/dashboard/overview';
+      return await apiClient.get<DashboardOverviewData>(url);
     } catch {
       return {
         success: true,

@@ -1,9 +1,8 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../core/hooks/useAuth';
 import { AuthBrandingPanel } from '../components/AuthBrandingPanel';
 import { LoginForm } from '../components/LoginForm';
-import './login.css';
 
 interface LoginPageProps {
   onLoginSuccess?: () => void;

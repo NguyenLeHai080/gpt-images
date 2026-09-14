@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../core/api/client';
 import { alert } from '../../../core/alert';
-import type { UserAccountItem, AccountStats, CreateUserData, UserRole } from '../types';
+import type { UserAccountItem, AccountStats, CreateUserData, UpdateUserData, UserRole } from '../types';
 
 interface AccountsData {
   users: UserAccountItem[];
@@ -117,6 +117,37 @@ export const useAccounts = () => {
     }
   };
 
+  const updateAccount = async (userId: string, data: UpdateUserData): Promise<boolean> => {
+    try {
+      const res = await apiClient.put<UserAccountItem>(`/accounts/${userId}`, data);
+      if (res.success && res.data) {
+        alert.toast('Cập nhật thông tin tài khoản thành công', 'success');
+        fetchAccounts();
+        return true;
+      }
+      throw new Error(res.message || 'Lỗi khi cập nhật tài khoản');
+    } catch (err: any) {
+      alert.toast(err?.message || 'Không thể cập nhật tài khoản', 'error');
+      return false;
+    }
+  };
+
+  const changePassword = async (userId: string, newPassword: string): Promise<boolean> => {
+    try {
+      const res = await apiClient.post<{ user_id: string }>(`/accounts/${userId}/password`, {
+        new_password: newPassword,
+      });
+      if (res.success) {
+        alert.toast('Đổi mật khẩu người dùng thành công', 'success');
+        return true;
+      }
+      throw new Error(res.message || 'Lỗi khi đổi mật khẩu');
+    } catch (err: any) {
+      alert.toast(err?.message || 'Không thể đổi mật khẩu', 'error');
+      return false;
+    }
+  };
+
   return {
     users,
     stats,
@@ -124,6 +155,8 @@ export const useAccounts = () => {
     error,
     fetchAccounts,
     createAccount,
+    updateAccount,
+    changePassword,
     updateRole,
     toggleStatus,
     deleteAccount,

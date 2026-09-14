@@ -13,6 +13,11 @@ export interface Column<T> {
 
 export type SortOrder = 'asc' | 'desc' | null;
 
+export interface RowSelection<T> {
+  selectedRowKeys: string[];
+  onChange: (selectedRowKeys: string[], selectedRows: T[]) => void;
+}
+
 export interface TableProps<T> {
   columns: Column<T>[];
   data: T[];
@@ -21,6 +26,7 @@ export interface TableProps<T> {
   emptyText?: string;
   pagination?: Partial<PaginationProps> | false;
   onRowClick?: (record: T) => void;
+  rowSelection?: RowSelection<T>;
   striped?: boolean;
   bordered?: boolean;
   className?: string;

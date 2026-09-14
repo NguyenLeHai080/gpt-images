@@ -48,7 +48,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Card */}
       <div
-        className={`relative w-full ${sizeClasses} overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200 transition-all z-10 flex flex-col max-h-[90vh] ${className}`}
+        className={`relative w-full ${sizeClasses} overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200/90 transition-all z-10 flex flex-col max-h-[90vh] animate-scale-in ${className}`}
       >
         {/* Header */}
         {(title || description) && (
@@ -59,7 +59,8 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors ml-4"
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all active:scale-90 ml-4"
+              aria-label="Đóng modal"
             >
               <X size={18} />
             </button>

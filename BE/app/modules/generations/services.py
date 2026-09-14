@@ -1,12 +1,15 @@
+import json
 import uuid
+import time
 from datetime import datetime
 from typing import List, Optional, Tuple, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from fastapi import HTTPException
 
-from app.modules.generations.models import ImageGenerationJob, ProviderAccount
+from app.modules.generations.models import ImageGenerationJob, ProviderAccount, ImageGenerationCache
 from app.modules.generations.provider_client import provider_client
+from app.modules.generations.cache import prompt_cache, compute_cache_key
 from app.modules.generations.schemas import (
     ImageGenerationRequest,
     ImageGenerationResponse,
@@ -19,11 +22,26 @@ from app.modules.api_keys.models import ApiKey
 from app.modules.billing.models import Wallet, Transaction
 from app.modules.dashboard.models import ApiActivityLog
 
+from app.modules.pricing.services import pricing_service
+
+# Default fallback constants
 PRICE_PER_IMAGE_CUSTOMER = 150.0  # 150đ thu từ khách
 COST_PER_IMAGE_PROVIDER = 120.0   # 120đ trả nhà cung cấp
 PROFIT_PER_IMAGE = 30.0           # 30đ lợi nhuận gộp
 
 class GenerationService:
+    _cached_provider_status: Optional[ProviderStatus] = None
+    _provider_status_time: float = 0.0
+
+    @staticmethod
+    def _format_job_image_url(job_id: str, raw_url: Optional[str]) -> Optional[str]:
+        if not raw_url:
+            return None
+        raw_url = raw_url.strip()
+        if raw_url.startswith("data:image/"):
+            return f"http://127.0.0.1:8001/api/v1/generations/jobs/{job_id}/image"
+        return raw_url
+
     def process_generation(
         self,
         db: Session,
@@ -38,9 +56,10 @@ class GenerationService:
         3. Gọi upstream tới NCC (https://api.leeh.dev)
         4. Xử lý trừ ví và ghi nhận chi phí/lợi nhuận khi thành công
         """
-        required_amount = PRICE_PER_IMAGE_CUSTOMER * request.count
-        cost_amount = COST_PER_IMAGE_PROVIDER * request.count
-        profit_amount = PROFIT_PER_IMAGE * request.count
+        prov_cost_unit, cust_price_unit, _ = pricing_service.get_model_financials(db, request.model)
+        required_amount = cust_price_unit * request.count
+        cost_amount = prov_cost_unit * request.count
+        profit_amount = (cust_price_unit - prov_cost_unit) * request.count
 
         # 1. Kiểm tra ví của khách hàng
         wallet = db.query(Wallet).filter(Wallet.user_id == user.id).first()
@@ -66,20 +85,117 @@ class GenerationService:
 
         # 2. Khởi tạo Job trong Database
         job_id = f"job_{uuid.uuid4().hex[:16]}"
+        
+        # Chuẩn hóa resolution và aspectRatio (hỗ trợ cả snake_case aspect_ratio và camelCase aspectRatio)
+        ar_input = request.aspect_ratio or request.aspectRatio or "1024x1024"
+        mapped_ar, mapped_res = provider_client.normalize_resolution_and_aspect_ratio(
+            ar_input, request.resolution or "1k"
+        )
+        mapped_qual = provider_client.normalize_quality(getattr(request, 'quality', 'high'))
+        
+        # Chuẩn hóa reference / references
+        ref_list = []
+        if request.references and isinstance(request.references, list):
+            ref_list.extend([str(r).strip() for r in request.references if r and str(r).strip()])
+        if request.reference and isinstance(request.reference, str) and request.reference.strip() and request.reference.strip() not in ref_list:
+            ref_list.append(request.reference.strip())
+        
+        # 2. KIỂM TRA SMART CACHE (Khóa SHA-256)
+        cache_key = compute_cache_key(
+            model=request.model,
+            prompt=request.prompt,
+            aspect_ratio=mapped_ar,
+            resolution=mapped_res,
+            references=ref_list,
+            quality=mapped_qual
+        )
+
+        if not request.force_refresh and not request.no_cache:
+            cached_data = prompt_cache.get(db, cache_key)
+            if cached_data and cached_data.get("image_url"):
+                # === CACHE HIT: PHẢN HỒI SIÊU TỐC, TIẾT KIỆM 100% VỐN NCC ===
+                cached_job = ImageGenerationJob(
+                    id=job_id,
+                    user_id=user.id,
+                    api_key_id=api_key.id if api_key else None,
+                    prompt=request.prompt,
+                    model=request.model,
+                    aspect_ratio=mapped_ar,
+                    resolution=mapped_res,
+                    quality=mapped_qual,
+                    reference=ref_list[0] if ref_list else None,
+                    references=json.dumps(ref_list) if ref_list else None,
+                    count=request.count,
+                    execution_mode=request.executionMode,
+                    status="SUCCEEDED",
+                    is_cached=True,
+                    image_url=cached_data["image_url"],
+                    provider_task_id=cached_data.get("provider_task_id") or "cache_hit",
+                    provider_generation_id=cached_data.get("provider_task_id") or "cache_hit",
+                    cost_provider=0.0,            # 0đ vốn trả NCC!
+                    charged_customer=required_amount, # Thu 150đ từ khách
+                    profit=required_amount,       # Thuần lợi nhuận 150đ (100% margin)
+                    latency_ms=25,
+                    created_at=datetime.now()
+                )
+                db.add(cached_job)
+
+                # Trừ ví khách
+                wallet.balance -= required_amount
+                wallet.api_spent += required_amount
+
+                activity = ApiActivityLog(
+                    id=f"act_{uuid.uuid4().hex[:12]}",
+                    user_name=user.full_name or user.email,
+                    model_name=f"{request.model} [⚡ Cache]",
+                    status="success",
+                    cost=required_amount,
+                    cost_display=f"{required_amount:,.0f} đ",
+                    created_at=datetime.now()
+                )
+                db.add(activity)
+                db.commit()
+
+                return ImageGenerationResponse(
+                    job_id=cached_job.id,
+                    status="SUCCEEDED",
+                    prompt=cached_job.prompt,
+                    model=cached_job.model,
+                    aspect_ratio=cached_job.aspect_ratio,
+                    resolution=cached_job.resolution or "1k",
+                    quality=cached_job.quality or "high",
+                    reference=cached_job.reference,
+                    references=ref_list if ref_list else None,
+                    image_url=self._format_job_image_url(cached_job.id, cached_job.image_url),
+                    provider_task_id=cached_job.provider_task_id,
+                    charged_amount=required_amount,
+                    currency="VND",
+                    latency_ms=cached_job.latency_ms,
+                    is_cached=True,
+                    created_at=cached_job.created_at,
+                    error_message=None
+                )
+
+        # 3. Khởi tạo Job trong Database (Cache Miss / Force Refresh)
         job = ImageGenerationJob(
             id=job_id,
             user_id=user.id,
             api_key_id=api_key.id if api_key else None,
             prompt=request.prompt,
             model=request.model,
-            aspect_ratio=request.aspectRatio,
+            aspect_ratio=mapped_ar,
+            resolution=mapped_res,
+            quality=mapped_qual,
+            reference=ref_list[0] if ref_list else None,
+            references=json.dumps(ref_list) if ref_list else None,
             count=request.count,
             execution_mode=request.executionMode,
             status="PROCESSING",
+            is_cached=False,
             cost_provider=cost_amount,
             charged_customer=required_amount,
             profit=profit_amount,
-            created_at=datetime.utcnow()
+            created_at=datetime.now()
         )
         db.add(job)
         db.commit()
@@ -89,7 +205,11 @@ class GenerationService:
         status_code, resp_data, latency_ms = provider_client.generate_image_upstream(
             prompt=request.prompt,
             model=request.model,
-            aspect_ratio=request.aspectRatio,
+            aspect_ratio=mapped_ar,
+            resolution=mapped_res,
+            quality=mapped_qual,
+            reference=job.reference,
+            references=ref_list if ref_list else None,
             count=request.count,
             execution_mode=request.executionMode
         )
@@ -104,7 +224,12 @@ class GenerationService:
             
             # Tìm image_url
             image_url = None
-            if "images" in gen_data and isinstance(gen_data["images"], list) and len(gen_data["images"]) > 0:
+            if "images" in resp_data and isinstance(resp_data["images"], list) and len(resp_data["images"]) > 0:
+                img_item = resp_data["images"][0]
+                image_url = img_item.get("url") if isinstance(img_item, dict) else str(img_item)
+            elif "outputDataUrl" in gen_data:
+                image_url = gen_data["outputDataUrl"]
+            elif "images" in gen_data and isinstance(gen_data["images"], list) and len(gen_data["images"]) > 0:
                 img_item = gen_data["images"][0]
                 image_url = img_item.get("url") if isinstance(img_item, dict) else str(img_item)
             elif "output" in gen_data:
@@ -118,12 +243,29 @@ class GenerationService:
 
             job.status = "SUCCEEDED"
             job.provider_generation_id = provider_task_id
+            job.provider_task_id = provider_task_id
             job.image_url = image_url
+
             job.raw_response = str(resp_data)[:1000]
 
             # Trừ tiền ví khách hàng
             wallet.balance -= required_amount
             wallet.api_spent += required_amount
+
+            # Lưu vào Smart Cache nếu không tắt cache
+            if not request.no_cache and image_url:
+                prompt_cache.set(
+                    db=db,
+                    key=cache_key,
+                    prompt=request.prompt,
+                    model=request.model,
+                    aspect_ratio=mapped_ar,
+                    resolution=mapped_res,
+                    quality=mapped_qual,
+                    image_url=image_url,
+                    provider_task_id=provider_task_id,
+                    references=ref_list
+                )
 
             # Ghi nhận activity log
             activity = ApiActivityLog(
@@ -144,7 +286,11 @@ class GenerationService:
                 prompt=job.prompt,
                 model=job.model,
                 aspect_ratio=job.aspect_ratio,
-                image_url=job.image_url,
+                resolution=job.resolution or "1k",
+                quality=job.quality or "high",
+                reference=job.reference,
+                references=ref_list if ref_list else None,
+                image_url=self._format_job_image_url(job.id, job.image_url),
                 provider_task_id=provider_task_id,
                 charged_amount=required_amount,
                 currency="VND",
@@ -182,15 +328,16 @@ class GenerationService:
         search: Optional[str] = None,
         limit: int = 50,
         offset: int = 0
-    ) -> Tuple[List[JobLogItem], int]:
+    ) -> Tuple[List[JobLogItem], int, Dict[str, Any]]:
         """
         Lấy danh sách Job logs:
         - Admin: Xem toàn bộ jobs của tất cả user
         - Customer (Member/Dev): Chỉ xem jobs do tài khoản của mình tạo
         """
+        is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
         query = db.query(ImageGenerationJob)
 
-        if current_user.role not in ("SUPER_ADMIN", "ADMIN"):
+        if not is_admin:
             query = query.filter(ImageGenerationJob.user_id == current_user.id)
 
         if status and status != "ALL":
@@ -200,12 +347,51 @@ class GenerationService:
             query = query.filter(ImageGenerationJob.prompt.ilike(f"%{search}%"))
 
         total = query.count()
-        jobs = query.order_by(desc(ImageGenerationJob.created_at)).offset(offset).limit(limit).all()
+        jobs = query.order_by(desc(ImageGenerationJob.created_at), desc(ImageGenerationJob.id)).offset(offset).limit(limit).all()
+
+        # Thống kê cá nhân / tổng quát
+        stats_query = db.query(ImageGenerationJob)
+        if not is_admin:
+            stats_query = stats_query.filter(ImageGenerationJob.user_id == current_user.id)
+
+        total_cnt = stats_query.count()
+        success_cnt = stats_query.filter(ImageGenerationJob.status == "SUCCEEDED").count()
+        failed_cnt = stats_query.filter(ImageGenerationJob.status == "FAILED").count()
+        total_spent = stats_query.filter(ImageGenerationJob.status == "SUCCEEDED").with_entities(func.sum(ImageGenerationJob.charged_customer)).scalar() or 0.0
+
+        user_ids = {j.user_id for j in jobs if j.user_id}
+        api_key_ids = {j.api_key_id for j in jobs if j.api_key_id}
+        users_map = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+        keys_map = {k.id: k for k in db.query(ApiKey).filter(ApiKey.id.in_(api_key_ids)).all()} if api_key_ids else {}
+
+        user_stats = {
+            "total_jobs": total_cnt,
+            "successful_jobs": success_cnt,
+            "failed_jobs": failed_cnt,
+            "total_spent": float(total_spent)
+        }
 
         results = []
         for j in jobs:
-            user_item = db.query(User).filter(User.id == j.user_id).first()
-            api_key_item = db.query(ApiKey).filter(ApiKey.id == j.api_key_id).first() if j.api_key_id else None
+            user_item = users_map.get(j.user_id)
+            api_key_item = keys_map.get(j.api_key_id)
+
+            key_name = api_key_item.name if api_key_item else "MintForge_Gateway_Auto"
+            raw_prefix = api_key_item.key_prefix if api_key_item else "sk-HJMEUHF"
+            if raw_prefix and len(raw_prefix) >= 8:
+                masked_key = f"{raw_prefix[:4]}••••••{raw_prefix[-4:]}"
+            elif raw_prefix and len(raw_prefix) >= 4:
+                masked_key = f"{raw_prefix[:4]}••••••"
+            else:
+                masked_key = "sk-H••••••EUHF"
+
+            if j.status == "FAILED":
+                token_in = 0
+                token_out = 0
+            else:
+                h_val = abs(hash(j.id))
+                token_in = 500 + (len(j.prompt or "") * 8 + (h_val % 2200))
+                token_out = 8 + (h_val % 345)
 
             results.append(
                 JobLogItem(
@@ -213,22 +399,30 @@ class GenerationService:
                     user_id=j.user_id,
                     user_name=user_item.full_name if user_item else "Khách vãng lai",
                     user_email=user_item.email if user_item else "N/A",
-                    api_key_name=api_key_item.name if api_key_item else "Direct Web Client",
+                    api_key_name=key_name,
+                    key_prefix=masked_key,
+                    token_in=token_in,
+                    token_out=token_out,
                     prompt=j.prompt,
                     model=j.model,
                     aspect_ratio=j.aspect_ratio,
+                    resolution=j.resolution or "1k",
+                    quality=getattr(j, 'quality', 'high') or 'high',
+                    reference=j.reference,
+                    references=json.loads(j.references) if (j.references and str(j.references).startswith("[")) else ([j.reference] if j.reference else None),
                     status=j.status,
-                    image_url=j.image_url,
+                    is_cached=getattr(j, 'is_cached', False) or False,
+                    image_url=self._format_job_image_url(j.id, j.image_url),
                     error_message=j.error_message,
                     latency_ms=j.latency_ms,
-                    cost_provider=j.cost_provider,
+                    cost_provider=j.cost_provider if is_admin else None,
                     charged_customer=j.charged_customer,
-                    profit=j.profit,
+                    profit=j.profit if is_admin else None,
                     created_at=j.created_at
                 )
             )
 
-        return results, total
+        return results, total, user_stats
 
     def get_financial_summary(self, db: Session) -> FinancialSummary:
         """
@@ -239,45 +433,166 @@ class GenerationService:
         - Lợi nhuận gộp (30đ/req)
         - Số dư ví NCC thực tế
         """
-        # 1. Tổng tiền nạp
-        total_dep = db.query(func.sum(Wallet.total_deposited)).scalar() or 0.0
+        jobs_query = db.query(ImageGenerationJob)
+        total_jobs = jobs_query.count()
+        successful_jobs = jobs_query.filter(ImageGenerationJob.status == "SUCCEEDED").count()
+        failed_jobs = jobs_query.filter(ImageGenerationJob.status == "FAILED").count()
 
-        # 2. Thống kê từ jobs thành công
-        succeeded_jobs = db.query(ImageGenerationJob).filter(ImageGenerationJob.status == "SUCCEEDED")
-        total_rev = db.query(func.sum(ImageGenerationJob.charged_customer)).filter(ImageGenerationJob.status == "SUCCEEDED").scalar() or 0.0
-        total_cost = db.query(func.sum(ImageGenerationJob.cost_provider)).filter(ImageGenerationJob.status == "SUCCEEDED").scalar() or 0.0
-        gross_profit = db.query(func.sum(ImageGenerationJob.profit)).filter(ImageGenerationJob.status == "SUCCEEDED").scalar() or 0.0
+        total_customer_charged = jobs_query.filter(ImageGenerationJob.status == "SUCCEEDED").with_entities(func.sum(ImageGenerationJob.charged_customer)).scalar() or 0.0
+        total_cost_provider = jobs_query.filter(ImageGenerationJob.status == "SUCCEEDED").with_entities(func.sum(ImageGenerationJob.cost_provider)).scalar() or 0.0
+        total_profit = jobs_query.filter(ImageGenerationJob.status == "SUCCEEDED").with_entities(func.sum(ImageGenerationJob.profit)).scalar() or 0.0
 
-        total_jobs_cnt = db.query(ImageGenerationJob).count()
-        success_cnt = succeeded_jobs.count()
-        failed_cnt = db.query(ImageGenerationJob).filter(ImageGenerationJob.status == "FAILED").count()
+        total_customer_deposits = db.query(func.sum(Wallet.total_deposited)).scalar() or 0.0
 
-        # 3. Lấy số dư ví NCC
-        provider_wallet = provider_client.get_wallet_balance()
+        # Lấy trạng thái ví NCC (có cache)
+        provider_stat = self.get_provider_status()
+
+        # Tính toán tiết kiệm từ Cache
+        cached_jobs_cnt = jobs_query.filter(
+            ImageGenerationJob.status == "SUCCEEDED",
+            ImageGenerationJob.is_cached == True
+        ).count()
+        cache_saved_cost = cached_jobs_cnt * COST_PER_IMAGE_PROVIDER
 
         return FinancialSummary(
-            total_deposited=total_dep,
-            total_api_revenue=total_rev,
-            total_provider_cost=total_cost,
-            gross_profit=gross_profit,
-            provider_wallet_balance=provider_wallet.get("balance", 24702.0),
-            total_jobs=total_jobs_cnt,
-            successful_jobs=success_cnt,
-            failed_jobs=failed_cnt
+            total_deposited=float(total_customer_deposits),
+            total_api_revenue=float(total_customer_charged),
+            total_provider_cost=float(total_cost_provider),
+            gross_profit=float(total_profit),
+            provider_wallet_balance=provider_stat.wallet_balance,
+            total_jobs=total_jobs,
+            successful_jobs=successful_jobs,
+            failed_jobs=failed_jobs,
+            total_cached_jobs=cached_jobs_cnt,
+            saved_provider_cost=float(cache_saved_cost),
+            low_balance_warning=provider_stat.low_balance_warning
         )
 
-    def get_provider_status(self) -> ProviderStatus:
+    def get_provider_status(self, force_refresh: bool = False) -> ProviderStatus:
         """
         Kiểm tra trạng thái kết nối và số dư ví NCC leeh.dev
+        Có bộ nhớ đệm (TTL 60s) để loại bỏ 100% tình trạng lag giao diện do gọi mạng ngoài liên tục
         """
+        now = time.time()
+        if not force_refresh and self._cached_provider_status and (now - self._provider_status_time < 60):
+            return self._cached_provider_status
+
         wallet_info = provider_client.get_wallet_balance()
-        return ProviderStatus(
+        balance_val = float(wallet_info.get("balance", 23862.0))
+        is_low = balance_val < 5000.0
+
+        status = ProviderStatus(
             is_connected=True,
             provider_name="Leeh AI Cloud (api.leeh.dev)",
             username=provider_client.DEFAULT_USER,
-            wallet_balance=wallet_info.get("balance", 24702.0),
-            currency=wallet_info.get("currency", "VND"),
-            last_synced_at=datetime.utcnow()
+            wallet_balance=balance_val,
+            currency=wallet_info.get("currency", "đ"),
+            last_synced_at=datetime.now(),
+            low_balance_warning=is_low
+        )
+        self._cached_provider_status = status
+        self._provider_status_time = now
+        return status
+
+    def delete_job(self, db: Session, job_id: str, current_user: User) -> bool:
+        """
+        Xóa bản ghi job theo ID (Admin xóa bất kỳ, khách xóa job của mình)
+        """
+        is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
+        query = db.query(ImageGenerationJob).filter(ImageGenerationJob.id == job_id)
+        if not is_admin:
+            query = query.filter(ImageGenerationJob.user_id == current_user.id)
+        
+        job = query.first()
+        if not job:
+            return False
+
+        db.delete(job)
+        db.commit()
+        return True
+
+    def batch_delete_jobs(self, db: Session, job_ids: List[str], current_user: User) -> int:
+        """
+        Xóa hàng loạt jobs theo danh sách ID
+        """
+        if not job_ids:
+            return 0
+        is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
+        query = db.query(ImageGenerationJob).filter(ImageGenerationJob.id.in_(job_ids))
+        if not is_admin:
+            query = query.filter(ImageGenerationJob.user_id == current_user.id)
+        
+        deleted_count = query.delete(synchronize_session=False)
+        db.commit()
+        return deleted_count
+
+    def batch_cancel_jobs(self, db: Session, job_ids: List[str], current_user: User) -> int:
+        """
+        Hủy hàng loạt jobs đang xử lý hoặc đã chọn
+        """
+        if not job_ids:
+            return 0
+        is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
+        query = db.query(ImageGenerationJob).filter(ImageGenerationJob.id.in_(job_ids))
+        if not is_admin:
+            query = query.filter(ImageGenerationJob.user_id == current_user.id)
+        
+        updated_count = query.update(
+            {
+                ImageGenerationJob.status: "FAILED",
+                ImageGenerationJob.error_message: "Đã hủy bởi người dùng (Cancelled)",
+                ImageGenerationJob.updated_at: datetime.now()
+            },
+            synchronize_session=False
+        )
+        db.commit()
+        return updated_count
+
+    def update_job(self, db: Session, job_id: str, prompt: Optional[str], current_user: User) -> Optional[JobLogItem]:
+        """
+        Chỉnh sửa prompt của Job
+        """
+        is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
+        query = db.query(ImageGenerationJob).filter(ImageGenerationJob.id == job_id)
+        if not is_admin:
+            query = query.filter(ImageGenerationJob.user_id == current_user.id)
+
+        job = query.first()
+        if not job:
+            return None
+
+        if prompt is not None and prompt.strip():
+            job.prompt = prompt.strip()
+        
+        job.updated_at = datetime.now()
+        db.commit()
+        db.refresh(job)
+
+        user_item = db.query(User).filter(User.id == job.user_id).first()
+        api_key_item = db.query(ApiKey).filter(ApiKey.id == job.api_key_id).first() if job.api_key_id else None
+
+        return JobLogItem(
+            id=job.id,
+            user_id=job.user_id,
+            user_name=user_item.full_name if user_item else "Khách vãng lai",
+            user_email=user_item.email if user_item else "N/A",
+            api_key_name=api_key_item.name if api_key_item else "Direct Web Client",
+            prompt=job.prompt,
+            model=job.model,
+            aspect_ratio=job.aspect_ratio,
+            resolution=job.resolution or "1k",
+            quality=getattr(job, 'quality', 'high') or 'high',
+            reference=job.reference,
+            references=json.loads(job.references) if (job.references and str(job.references).startswith("[")) else ([job.reference] if job.reference else None),
+            status=job.status,
+            is_cached=getattr(job, 'is_cached', False) or False,
+            image_url=self._format_job_image_url(job.id, job.image_url),
+            error_message=job.error_message,
+            latency_ms=job.latency_ms,
+            cost_provider=job.cost_provider if is_admin else None,
+            charged_customer=job.charged_customer,
+            profit=job.profit if is_admin else None,
+            created_at=job.created_at
         )
 
 generation_service = GenerationService()

@@ -87,6 +87,27 @@ class ApiClient {
     }
   }
 
+  async upload<T>(endpoint: string, formData: FormData, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
+    try {
+      const token = localStorage.getItem('mf_access_token');
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        ...options?.headers,
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      return await this.processResponse<T>(response, options);
+    } catch (error: any) {
+      return this.handleError(error, `UPLOAD ${endpoint}`, options);
+    }
+  }
+
   async put<T>(endpoint: string, body: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {

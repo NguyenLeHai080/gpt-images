@@ -16,8 +16,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
+    const token = localStorage.getItem('mf_access_token');
     const stored = localStorage.getItem('mf_user');
-    if (stored) {
+    if (token && stored) {
       try {
         return JSON.parse(stored);
       } catch {
@@ -26,26 +27,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
     }
-    // Default initial mock if not yet logged in so menu is always interactive
-    return {
-      id: 'user_admin_01',
-      email: 'admin@mintforge.vn',
-      full_name: 'Nguyen Le Hai',
-      role: 'SUPER_ADMIN',
-      company_name: 'MintForge Business Suite',
-    };
+    return null;
   });
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshUser = useCallback(async () => {
+    const token = localStorage.getItem('mf_access_token');
+    if (!token) {
+      setUser(null);
+      return;
+    }
     try {
       const res = await apiClient.get<User>('/auth/me');
       if (res.success && res.data) {
         setUser(res.data);
         localStorage.setItem('mf_user', JSON.stringify(res.data));
+      } else {
+        localStorage.removeItem('mf_access_token');
+        localStorage.removeItem('mf_user');
+        setUser(null);
       }
     } catch (err) {
-      console.warn('[useAuth] Không thể tải thông tin user từ /auth/me:', err);
+      localStorage.removeItem('mf_access_token');
+      localStorage.removeItem('mf_user');
+      setUser(null);
     }
   }, []);
 

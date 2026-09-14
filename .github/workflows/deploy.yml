@@ -1,0 +1,41 @@
+name: Production Deployment (Auto CI/CD)
+
+on:
+  push:
+    branches:
+      - prod
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Server 221.121.1.3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST || '221.121.1.3' }}
+          username: ${{ secrets.SSH_USER || 'root' }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            echo "🚀 [CI/CD] Bắt đầu tự động cập nhật và build trên server..."
+            
+            if [ ! -d "/opt/gpt-images/prod/.git" ]; then
+              echo "Thư mục /opt/gpt-images/prod chưa khởi tạo. Đang clone repository..."
+              mkdir -p /opt/gpt-images/prod
+              git clone https://github.com/NguyenLeHai080/gpt-images.git /opt/gpt-images/prod
+            fi
+            
+            cd /opt/gpt-images/prod
+            bash deploy/deploy.sh

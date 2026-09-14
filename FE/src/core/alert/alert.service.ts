@@ -83,6 +83,7 @@ export const alertService = {
         popup: 'mf-swal-popup',
         title: 'mf-swal-title',
         htmlContainer: 'mf-swal-html',
+        actions: 'mf-swal-actions',
         confirmButton: options.isDanger ? 'mf-swal-danger-btn' : 'mf-swal-confirm-btn',
         cancelButton: 'mf-swal-cancel-btn',
       },

@@ -1,8 +1,7 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Menu, Search, Plus, Bell, BookOpen, Globe, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import avatarAdmin from '../../assets/img/avatar-admin.svg';
-import './layout.css';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;

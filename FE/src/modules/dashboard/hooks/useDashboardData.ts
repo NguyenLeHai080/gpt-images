@@ -7,12 +7,13 @@ export const useDashboardData = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
 
-  const fetchData = useCallback(async (showRefreshingState = false) => {
+  const fetchData = useCallback(async (showRefreshingState = false, userId = selectedUserId) => {
     if (showRefreshingState) setIsRefreshing(true);
     setError(null);
     try {
-      const res = await dashboardApi.getOverview();
+      const res = await dashboardApi.getOverview(userId);
       if (res.success && res.data) {
         setData(res.data);
       }
@@ -22,14 +23,18 @@ export const useDashboardData = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [selectedUserId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(false, selectedUserId);
+  }, [fetchData, selectedUserId]);
+
+  const changeAccount = (userId: string) => {
+    setSelectedUserId(userId);
+  };
 
   const refresh = () => {
-    fetchData(true);
+    fetchData(true, selectedUserId);
   };
 
   return {
@@ -37,6 +42,8 @@ export const useDashboardData = () => {
     isLoading,
     isRefreshing,
     error,
+    selectedUserId,
+    changeAccount,
     refresh,
   };
 };

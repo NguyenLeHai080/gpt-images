@@ -29,3 +29,12 @@ export interface CreateUserData {
   company_name: string;
   is_active: boolean;
 }
+
+export interface UpdateUserData {
+  full_name?: string;
+  email?: string;
+  role?: UserRole;
+  company_name?: string;
+  password?: string;
+  is_active?: boolean;
+}

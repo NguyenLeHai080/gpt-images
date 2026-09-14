@@ -1,0 +1,56 @@
+/* MintForge Badge Component Styles */
+.mf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.mf-badge--sm {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.mf-badge--md {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.mf-badge--brand {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.mf-badge--success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.mf-badge--warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.mf-badge--info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.mf-badge--purple {
+  background-color: var(--color-purple-bg);
+  color: var(--color-purple);
+}
+
+.mf-badge--danger {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.mf-badge--dark {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}

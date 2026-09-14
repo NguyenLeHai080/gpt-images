@@ -6,6 +6,8 @@ from app.modules.api_keys.models import ApiKey
 from app.modules.billing.models import Wallet, Transaction
 from app.modules.dashboard.models import ApiActivityLog
 from app.modules.generations.models import ImageGenerationJob, ProviderAccount
+from app.modules.pricing.models import ModelPricing
+from app.modules.pricing.services import pricing_service
 
 def init_database() -> None:
     """
@@ -175,7 +177,7 @@ def init_database() -> None:
                     cost_provider=120.0,
                     charged_customer=150.0,
                     profit=30.0,
-                    created_at=datetime(2026, 9, 13, 21, 30)
+                    created_at=datetime(2026, 9, 13, 11, 30)
                 ),
                 ImageGenerationJob(
                     id="job_8812bc3d",
@@ -193,7 +195,7 @@ def init_database() -> None:
                     cost_provider=120.0,
                     charged_customer=150.0,
                     profit=30.0,
-                    created_at=datetime(2026, 9, 13, 20, 15)
+                    created_at=datetime(2026, 9, 13, 10, 15)
                 ),
                 ImageGenerationJob(
                     id="job_7721df9a",
@@ -211,7 +213,7 @@ def init_database() -> None:
                     cost_provider=120.0,
                     charged_customer=150.0,
                     profit=30.0,
-                    created_at=datetime(2026, 9, 13, 18, 40)
+                    created_at=datetime(2026, 9, 13, 9, 40)
                 ),
                 ImageGenerationJob(
                     id="job_6632ee10",
@@ -229,7 +231,7 @@ def init_database() -> None:
                     cost_provider=120.0,
                     charged_customer=150.0,
                     profit=30.0,
-                    created_at=datetime(2026, 9, 13, 16, 10)
+                    created_at=datetime(2026, 9, 13, 8, 10)
                 ),
                 ImageGenerationJob(
                     id="job_5541ff22",
@@ -246,7 +248,7 @@ def init_database() -> None:
                     cost_provider=0.0,
                     charged_customer=0.0,
                     profit=0.0,
-                    created_at=datetime(2026, 9, 13, 15, 0)
+                    created_at=datetime(2026, 9, 13, 7, 0)
                 )
             ]
             db.add_all(sample_jobs)
@@ -269,6 +271,10 @@ def init_database() -> None:
             db.add(provider_acc)
             db.commit()
             print("[PostgreSQL] Seeded upstream provider account configuration.")
+
+        # 6. Seed Model Pricing Rate Cards
+        pricing_service.ensure_seeded(db)
+        print("[PostgreSQL] Seeded model pricing rate cards (gpt-image-2, dall-e-3, etc.).")
 
     except Exception as e:
         db.rollback()

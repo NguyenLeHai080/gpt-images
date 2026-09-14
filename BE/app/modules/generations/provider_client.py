@@ -1,9 +1,12 @@
 import time
 import json
 import ssl
+import os
+import base64
 import urllib.request
 import urllib.error
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
+from app.core.config import settings
 
 class ProviderClient:
     BASE_URL = "https://api.leeh.dev"
@@ -97,16 +100,94 @@ class ProviderClient:
             }
         return {"balance": 24702.0, "currency": "VND", "status": "simulated", "raw": resp}
 
+    @staticmethod
+    def normalize_resolution_and_aspect_ratio(aspect_ratio: str = "1024x1024", resolution: str = "1k") -> Tuple[str, str]:
+        """
+        Chuẩn hóa và kết hợp độ phân giải (1k, 2k, 4k) với aspectRatio (1024x1024, 2048x2048, 4096x4096, 16:9, 9:16)
+        """
+        res = (resolution or "1k").lower().strip()
+        ar = (aspect_ratio or "1024x1024").strip()
+
+        # Nhận diện resolution từ aspectRatio nếu client gửi trực tiếp kích thước pixel
+        if "4096" in ar or "3840" in ar:
+            res = "4k"
+        elif "2048" in ar or "2560" in ar:
+            res = "2k"
+        elif "1024" in ar and not resolution:
+            res = "1k"
+
+        if res not in ("1k", "2k", "4k"):
+            res = "1k"
+
+        # Tự động ánh xạ kích thước chi tiết dựa trên resolution và tỷ lệ hợp lệ của NCC
+        if res == "2k":
+            if ar in ("1024x1024", "1:1", "2048x2048"):
+                ar = "2048x2048"
+            elif ar in ("16:9", "1280x720", "1920x1080", "2560x1440"):
+                ar = "16:9"
+            elif ar in ("9:16", "720x1280", "1080x1920", "1440x2560"):
+                ar = "9:16"
+            elif ar in ("4:3", "3:4", "3:2", "2:3"):
+                ar = ar
+            else:
+                ar = "2048x2048"
+        elif res == "4k":
+            if ar in ("1024x1024", "2048x2048", "4096x4096", "1:1"):
+                ar = "2048x2048"
+            elif ar in ("16:9", "1280x720", "1920x1080", "2560x1440", "3840x2160"):
+                ar = "16:9"
+            elif ar in ("9:16", "720x1280", "1080x1920", "1440x2560", "2160x3840"):
+                ar = "9:16"
+            elif ar in ("4:3", "3:4", "3:2", "2:3"):
+                ar = ar
+            else:
+                ar = "2048x2048"
+        else: # 1k
+            if ar in ("1:1", "1024x1024"):
+                ar = "1024x1024"
+            elif ar in ("16:9", "1280x720"):
+                ar = "16:9"
+            elif ar in ("9:16", "720x1280"):
+                ar = "9:16"
+            elif ar in ("4:3", "3:4", "3:2", "2:3"):
+                ar = ar
+            else:
+                ar = "1024x1024"
+
+        return ar, res
+
+    @staticmethod
+    def normalize_quality(quality: Optional[str] = "high") -> str:
+        """
+        Chuẩn hóa mức độ chất lượng (Quality Steps):
+        - low (draft / fast): Tối ưu tốc độ
+        - medium (standard): Cân bằng tiêu chuẩn
+        - high (hd / ultra): Tối đa chi tiết vi mô và texture
+        """
+        q = (quality or "high").lower().strip()
+        if q in ("low", "fast", "draft"):
+            return "low"
+        elif q in ("medium", "standard", "normal"):
+            return "medium"
+        elif q in ("high", "hd", "ultra"):
+            return "high"
+        return "high"
+
     def generate_image_upstream(
         self,
         prompt: str,
         model: str = "gpt-image-2",
         aspect_ratio: str = "1024x1024",
+        resolution: str = "1k",
+        quality: str = "high",
+        reference: Optional[str] = None,
+        references: Optional[List[str]] = None,
         count: int = 1,
         execution_mode: str = "sync"
     ) -> Tuple[int, Dict[str, Any], int]:
         """
         Gửi yêu cầu tạo ảnh tới nhà cung cấp upstream qua Master API Key
+        Hỗ trợ resolution (1k, 2k, 4k), quality (low, medium, high), reference (URL) và references (danh sách URL)
         Trả về (status_code, response_dict, latency_ms)
         """
         start_time = time.time()
@@ -124,15 +205,47 @@ class ProviderClient:
             if status in (200, 201) and "raw_key" in keys_resp:
                 self.raw_api_key = keys_resp["raw_key"]
 
-        payload = {
+        # Chuẩn hóa resolution, quality và aspectRatio
+        mapped_ar, mapped_res = self.normalize_resolution_and_aspect_ratio(aspect_ratio, resolution)
+        mapped_qual = self.normalize_quality(quality)
+
+        # Chuẩn hóa reference và references
+        ref_list: List[str] = []
+        if references and isinstance(references, list):
+            ref_list.extend([str(r).strip() for r in references if r and str(r).strip()])
+        if reference and isinstance(reference, str) and reference.strip() and reference.strip() not in ref_list:
+            ref_list.append(reference.strip())
+
+        payload: Dict[str, Any] = {
             "prompt": prompt,
             "model": model,
             "modelKey": model,
             "mode": "generation",
             "executionMode": execution_mode,
-            "aspectRatio": aspect_ratio,
+            "aspectRatio": mapped_ar,
+            "resolution": mapped_res,
+            "quality": mapped_qual,
             "count": count
         }
+
+        if ref_list:
+            upload_dir = settings.REFERENCES_UPLOAD_DIR
+            resolved_refs: List[str] = []
+            for r in ref_list:
+                if r and "/static/uploads/references/" in r:
+                    fname = r.split("/static/uploads/references/")[-1]
+                    fpath = os.path.join(upload_dir, fname)
+                    if os.path.exists(fpath):
+                        with open(fpath, "rb") as bf:
+                            bytes_data = bf.read()
+                            fext = os.path.splitext(fname)[1].lower().lstrip(".")
+                            mime = f"image/{fext}" if fext != "jpg" else "image/jpeg"
+                            resolved_refs.append(f"data:{mime};base64,{base64.b64encode(bytes_data).decode('utf-8')}")
+                            continue
+                resolved_refs.append(r)
+
+            payload["references"] = resolved_refs
+            payload["reference"] = resolved_refs[0]
 
         headers = {
             "Authorization": f"Bearer {self.raw_api_key}"

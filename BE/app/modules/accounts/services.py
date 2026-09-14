@@ -7,6 +7,7 @@ from app.core.security import get_password_hash
 from app.modules.auth.models import User
 from app.modules.accounts.schemas import (
     CreateUserRequest,
+    UpdateUserRequest,
     UpdateRoleRequest,
     ToggleStatusRequest,
     UserAccountResponse,
@@ -208,6 +209,74 @@ class AccountsService:
                 return False
 
             db.delete(user)
+            db.commit()
+            return True
+        finally:
+            if close_session:
+                db.close()
+
+    @staticmethod
+    def update_user(user_id: str, payload: UpdateUserRequest, db: Optional[Session] = None) -> Optional[UserAccountResponse]:
+        close_session = False
+        if db is None:
+            db = SessionLocal()
+            close_session = True
+
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return None
+
+            if payload.full_name is not None:
+                user.full_name = payload.full_name.strip()
+            if payload.email is not None and payload.email.strip().lower() != user.email:
+                existing = db.query(User).filter(User.email == payload.email.strip().lower(), User.id != user_id).first()
+                if existing:
+                    raise ValueError(f"Email '{payload.email}' đã được sử dụng bởi tài khoản khác")
+                user.email = payload.email.strip().lower()
+            if payload.company_name is not None:
+                user.company_name = payload.company_name.strip()
+            if payload.role is not None:
+                if user.email == "admin@mintforge.vn" and payload.role.upper() != "SUPER_ADMIN":
+                    raise ValueError("Không thể thay đổi vai trò của tài khoản Super Admin gốc")
+                user.role = payload.role.upper()
+            if payload.is_active is not None:
+                if user.email == "admin@mintforge.vn" and not payload.is_active:
+                    raise ValueError("Không thể khóa tài khoản Super Admin gốc")
+                user.is_active = payload.is_active
+            if payload.password:
+                user.hashed_password = get_password_hash(payload.password)
+
+            db.commit()
+            db.refresh(user)
+
+            return UserAccountResponse(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                role=user.role,
+                company_name=user.company_name,
+                avatar_url=user.avatar_url,
+                is_active=user.is_active,
+                created_at=user.created_at
+            )
+        finally:
+            if close_session:
+                db.close()
+
+    @staticmethod
+    def change_password(user_id: str, new_password: str, db: Optional[Session] = None) -> bool:
+        close_session = False
+        if db is None:
+            db = SessionLocal()
+            close_session = True
+
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return False
+
+            user.hashed_password = get_password_hash(new_password)
             db.commit()
             return True
         finally:

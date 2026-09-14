@@ -1,4 +1,4 @@
-﻿"""
+"""
 Input Sanitizer & Payload Size Limiter
 Bảo vệ chống tấn công Payload DoS (CWE-400) và làm sạch dữ liệu đầu vào chống XSS
 """
@@ -8,7 +8,7 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-MAX_PAYLOAD_SIZE = 2 * 1024 * 1024  # 2MB
+MAX_PAYLOAD_SIZE = 25 * 1024 * 1024  # 25MB (cho phép upload ảnh phân giải cao)
 
 def sanitize_text(val: str) -> str:
     """Làm sạch chuỗi ký tự, vô hiệu hóa các payload XSS và script độc hại"""

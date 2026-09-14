@@ -37,6 +37,9 @@ class UpdateRoleRequest(BaseModel):
 class ToggleStatusRequest(BaseModel):
     is_active: bool
 
+class ChangePasswordRequest(BaseModel):
+    new_password: str
+
 class AccountStatsResponse(BaseModel):
     total_users: int
     active_users: int
