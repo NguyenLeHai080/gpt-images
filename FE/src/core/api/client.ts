@@ -39,7 +39,20 @@ class ApiClient {
     console.warn(`[ApiClient] Lỗi tại ${endpoint}:`, message);
 
     if (options?.showErrorAlert) {
-      alert.error('Lỗi yêu cầu API', message);
+      if (error?.status === 402 || message.includes('Số dư') || message.includes('không đủ')) {
+        alert.confirm({
+          title: 'Số Dư Ví Không Đủ',
+          text: `${message} Bạn có muốn chuyển sang trang nạp tiền (VietQR/SePay) ngay bây giờ không?`,
+          confirmButtonText: 'Nạp tiền ngay',
+          cancelButtonText: 'Để sau',
+        }).then((confirmed) => {
+          if (confirmed) {
+            window.location.href = '/app/billing';
+          }
+        });
+      } else {
+        alert.error('Lỗi yêu cầu API', message);
+      }
     }
 
     throw error;
