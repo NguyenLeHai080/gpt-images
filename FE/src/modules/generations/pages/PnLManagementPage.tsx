@@ -105,7 +105,7 @@ export const PnLManagementPage: React.FC = () => {
               <p className="text-[11px] text-emerald-600 font-semibold mt-1">
                 {financials?.saved_provider_cost && financials.saved_provider_cost > 0
                   ? `⚡ Tiết kiệm: ${formatVND(financials.saved_provider_cost)} (Cache)`
-                  : `120 đ / ảnh trả api.leeh.dev`}
+                  : `120 đ / ảnh chi phí máy chủ AI Engine`}
               </p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -141,7 +141,7 @@ export const PnLManagementPage: React.FC = () => {
                 {formatVND(providerStatus?.wallet_balance ?? 24462)}
               </h3>
               <p className="text-[11px] text-slate-400 mt-1">
-                Tài khoản willownelson
+                Cụm máy chủ AI Cluster Engine
               </p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
@@ -195,12 +195,12 @@ export const PnLManagementPage: React.FC = () => {
               Hệ thống trừ 150 đ / ảnh thành công. Nếu lỗi không trừ tiền.
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <strong className="text-slate-900 block mb-0.5">3. Chi phí trả nhà cung cấp:</strong>
-              NCC tự động trừ 120 đ trên tài khoản <code>willownelson</code>. Lợi nhuận ròng thu về 30 đ.
+              <strong className="text-slate-900 block mb-0.5">3. Chi phí tính toán máy chủ:</strong>
+              Hệ thống tự động tính 120 đ / ảnh cho chi phí hạ tầng máy chủ AI Engine. Lợi nhuận ròng thu về 30 đ.
             </div>
             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-800">
-              <strong className="text-emerald-900 block mb-0.5">4. Tái nạp ví nhà cung cấp:</strong>
-              Admin định kỳ dùng dòng tiền nạp của khách để nạp lại vào tài khoản NCC trên api.leeh.dev.
+              <strong className="text-emerald-900 block mb-0.5">4. Tái cấp quota máy chủ:</strong>
+              Admin định kỳ dùng dòng tiền nạp của khách để nạp lại quota duy trì cụm máy chủ AI Gateway.
             </div>
           </div>
         </Card>

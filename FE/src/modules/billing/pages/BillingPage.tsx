@@ -264,7 +264,7 @@ export const BillingPage: React.FC = () => {
                     onClick={handleSyncProvider}
                     disabled={isSyncing}
                     className="text-purple-600 hover:text-purple-800 p-0.5"
-                    title="Đồng bộ số dư ví NCC api.leeh.dev"
+                    title="Đồng bộ số dư cụm máy chủ AI Engine"
                   >
                     <RefreshCw size={11} className={isSyncing ? 'animate-spin' : ''} />
                   </button>
@@ -273,7 +273,7 @@ export const BillingPage: React.FC = () => {
                   {formatVND(providerStatus?.wallet_balance ?? 24462)}
                 </h3>
                 <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                  api.leeh.dev (willownelson)
+                  AI Cluster Engine (Active)
                 </p>
               </div>
               <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">

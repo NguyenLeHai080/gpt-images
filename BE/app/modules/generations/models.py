@@ -67,9 +67,10 @@ class ProviderAccount(Base):
     __tablename__ = "provider_accounts"
 
     id = Column(String(64), primary_key=True, default="provider_default")
-    provider_name = Column(String(100), default="Leeh AI Provider (api.leeh.dev)")
-    base_url = Column(String(255), default="https://api.leeh.dev")
-    username = Column(String(100), default="willownelson")
+    provider_name = Column(String(100), default="Nexora AI Cluster Engine")
+    base_url = Column(String(255), default="https://cluster.internal")
+    username = Column(String(100), default="cluster-worker-01")
+
     password = Column(String(100), default="123123123")
     access_token = Column(Text, nullable=True)
     api_key = Column(String(255), nullable=True)

@@ -260,10 +260,10 @@ def init_database() -> None:
         if not provider_acc:
             provider_acc = ProviderAccount(
                 id="provider_default",
-                provider_name="Leeh AI Cloud (api.leeh.dev)",
-                base_url="https://api.leeh.dev",
-                username="willownelson",
-                password="123123123",
+                provider_name="Nexora AI Cluster Engine",
+                base_url="https://cluster.internal",
+                username="cluster-worker-01",
+                password="••••••••••••",
                 wallet_balance=24702.0,
                 currency="VND",
                 is_active=True

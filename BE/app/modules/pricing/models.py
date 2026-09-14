@@ -7,7 +7,8 @@ class ModelPricing(Base):
 
     model = Column(String(64), primary_key=True)  # e.g., 'gpt-image-2'
     display_name = Column(String(128), nullable=False)
-    provider = Column(String(128), default="Leeh AI Cloud", nullable=False)
+    provider = Column(String(128), default="Nexora AI Core", nullable=False)
+
     
     # Financial fields (VND)
     provider_cost = Column(Float, default=120.0, nullable=False)   # Chi phí gốc trả cho NCC

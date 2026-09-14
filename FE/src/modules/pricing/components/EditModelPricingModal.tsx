@@ -24,7 +24,7 @@ export const EditModelPricingModal: React.FC<EditModelPricingModalProps> = ({
   const [tokenRate, setTokenRate] = useState<number>(1024);
   const [status, setStatus] = useState<string>('ACTIVE');
   const [displayName, setDisplayName] = useState<string>('');
-  const [provider, setProvider] = useState<string>('Leeh AI Cloud');
+  const [provider, setProvider] = useState<string>('Nexora AI Core');
   const [latencyRange, setLatencyRange] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +36,7 @@ export const EditModelPricingModal: React.FC<EditModelPricingModalProps> = ({
       setTokenRate(item.token_rate ?? 1024);
       setStatus(item.status || 'ACTIVE');
       setDisplayName(item.display_name || '');
-      setProvider(item.provider || 'Leeh AI Cloud');
+      setProvider(item.provider || 'Nexora AI Core');
       setLatencyRange(item.latency_range || '25ms (Cache) - 3.2s (Gen)');
       setDescription(item.description || '');
     }
@@ -177,7 +177,7 @@ export const EditModelPricingModal: React.FC<EditModelPricingModalProps> = ({
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
                 required
-                placeholder="VD: Leeh AI Cloud"
+                placeholder="VD: Nexora AI Core"
                 className="pricing-form-group__input"
               />
             </div>

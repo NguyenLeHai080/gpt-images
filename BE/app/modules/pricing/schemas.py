@@ -36,8 +36,8 @@ class ModelPricingItem(BaseModel):
 class CreateModelPricingRequest(BaseModel):
     model: str = Field(..., min_length=2, max_length=64, description="Mã định danh model (vd: gpt-image-3, dall-e-3)")
     display_name: str = Field(..., min_length=2, max_length=128, description="Tên hiển thị model")
-    provider: str = Field("Leeh AI Cloud", max_length=128, description="Nhà cung cấp")
-    provider_cost: float = Field(..., ge=0, description="Chi phí vốn trả cho Nhà cung cấp (VND)")
+    provider: str = Field("Nexora AI Core", max_length=128, description="Hệ thống AI Engine")
+    provider_cost: float = Field(..., ge=0, description="Chi phí tính toán cơ sở (VND)")
     base_price: float = Field(..., ge=0, description="Giá bán API niêm yết thu từ khách (VND)")
     token_rate: int = Field(1024, ge=1, description="Số token tương đương / lượt gọi")
     currency: str = Field("VND", max_length=16)

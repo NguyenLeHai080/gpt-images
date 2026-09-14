@@ -19,7 +19,7 @@ export const CreateModelPricingModal: React.FC<CreateModelPricingModalProps> = (
 }) => {
   const [model, setModel] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [provider, setProvider] = useState('Leeh AI Cloud');
+  const [provider, setProvider] = useState('Nexora AI Core');
   const [providerCost, setProviderCost] = useState<number>(120);
   const [basePrice, setBasePrice] = useState<number>(150);
   const [tokenRate, setTokenRate] = useState<number>(1024);
@@ -79,7 +79,7 @@ export const CreateModelPricingModal: React.FC<CreateModelPricingModalProps> = (
       const res = await pricingApi.createModelPricing({
         model: cleanModel,
         display_name: displayName.trim(),
-        provider: provider.trim() || 'Leeh AI Cloud',
+        provider: provider.trim() || 'Nexora AI Core',
         provider_cost: Number(providerCost),
         base_price: Number(basePrice),
         token_rate: Number(tokenRate),
@@ -202,7 +202,7 @@ export const CreateModelPricingModal: React.FC<CreateModelPricingModalProps> = (
                 required
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                placeholder="vd: Leeh AI Cloud, OpenAI..."
+                placeholder="vd: Nexora AI Core, OpenAI..."
                 className="pricing-form-group__input"
               />
             </div>

@@ -7,14 +7,15 @@ class SystemGatewayConfig(BaseModel):
     smart_cache_entries: int = 42
     smart_cache_size_mb: float = 1.85
     cache_hit_rate_pct: float = 38.5
-    upstream_provider_name: str = "Leeh AI Cloud"
-    upstream_endpoint: str = "https://api.leeh.dev"
+    upstream_provider_name: str = "Nexora AI Cluster Engine"
+    upstream_endpoint: str = "https://engine.internal"
     upstream_timeout_sec: int = 60
     fallback_provider_enabled: bool = True
-    fallback_provider_name: str = "OpenAI Direct Fallback"
+    fallback_provider_name: str = "Secondary Cluster Fallback"
     rate_limit_per_min: int = 120
     low_balance_alert_threshold: float = 50000.0
-    webhook_notification_url: Optional[str] = "https://mintforge.vn/webhook/alerts"
+    webhook_notification_url: Optional[str] = "https://gpt-images.nexoratech.com.vn/webhook/alerts"
+
     status: str = "HEALTHY"
 
 class UpdateGatewayConfigRequest(BaseModel):

@@ -358,7 +358,7 @@ export const PricingPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[11px] font-semibold text-slate-400 block">
-                Giá vốn trả NCC (Leeh AI)
+                Giá vốn máy chủ (AI Engine)
               </span>
               <span className="text-lg font-black text-slate-900 font-mono">
                 {formatVND(gpt2Item?.provider_cost ?? 120)}

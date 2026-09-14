@@ -9,9 +9,9 @@ from typing import Dict, Any, Optional, Tuple, List
 from app.core.config import settings
 
 class ProviderClient:
-    BASE_URL = "https://api.leeh.dev"
-    DEFAULT_USER = "willownelson"
-    DEFAULT_PASS = "123123123"
+    BASE_URL = os.getenv("UPSTREAM_PROVIDER_URL", "https://api.leeh.dev")
+    DEFAULT_USER = os.getenv("UPSTREAM_PROVIDER_USER", "willownelson")
+    DEFAULT_PASS = os.getenv("UPSTREAM_PROVIDER_PASS", "123123123")
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
     def __init__(self):
@@ -20,8 +20,9 @@ class ProviderClient:
         self.ssl_context.verify_mode = ssl.CERT_NONE
         
         self.access_token: Optional[str] = None
-        self.raw_api_key: Optional[str] = "sk-HJMEUHF7MPUXCYJFHW5R5CNSRGV5XHQQOC5EHKU2LWXUBOOLDHGA===="
+        self.raw_api_key: Optional[str] = os.getenv("UPSTREAM_PROVIDER_KEY", "sk-HJMEUHF7MPUXCYJFHW5R5CNSRGV5XHQQOC5EHKU2LWXUBOOLDHGA====")
         self.token_expiry: float = 0.0
+
 
     def _make_request(
         self,

@@ -23,7 +23,7 @@ export const ProviderWalletCard: React.FC<ProviderWalletCardProps> = ({
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
           <Server size={18} className="text-purple-600" />
-          <span>Tài Khoản Nhà Cung Cấp Upstream (api.leeh.dev)</span>
+          <span>Cụm Máy Chủ AI Engine (Processing Cluster)</span>
         </div>
         <Badge variant={status?.is_connected ? 'success' : 'warning'}>
           {status?.is_connected ? 'Đang kết nối' : 'Đang kiểm tra'}
@@ -34,16 +34,15 @@ export const ProviderWalletCard: React.FC<ProviderWalletCardProps> = ({
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-800 text-xs flex items-center gap-2">
           <AlertTriangle size={16} className="text-red-600 shrink-0" />
           <span>
-            <strong>Cảnh báo:</strong> Số dư ví NCC còn dưới 5.000 đ! Vui lòng nạp thêm tiền vào tài khoản{' '}
-            <code>willownelson</code> trên api.leeh.dev.
+            <strong>Cảnh báo:</strong> Quota máy chủ còn dưới 5.000 đ! Vui lòng nạp thêm hạn mức quota cho cụm xử lý AI Engine.
           </span>
         </div>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
         <div>
-          <span className="text-slate-400 block text-[10px]">Tài khoản (User):</span>
-          <span className="font-mono font-bold text-purple-700">{status?.username || 'willownelson'}</span>
+          <span className="text-slate-400 block text-[10px]">Cụm xử lý (Node):</span>
+          <span className="font-mono font-bold text-purple-700">{status?.username || 'cluster-worker-01'}</span>
         </div>
         <div>
           <span className="text-slate-400 block text-[10px]">Model cung ứng:</span>

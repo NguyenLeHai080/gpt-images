@@ -135,18 +135,18 @@ def get_financial_summary(
 @router.get("/generations/provider-status")
 def get_provider_status(request: Request):
     """
-    Kiểm tra trạng thái kết nối tới Nhà Cung Cấp leeh.dev và số dư ví
+    Kiểm tra trạng thái kết nối tới hệ thống AI Cluster Engine và số dư quota
     """
     data = generation_service.get_provider_status()
-    return success_response(data.model_dump(), "Lấy trạng thái Nhà Cung Cấp thành công")
+    return success_response(data.model_dump(), "Lấy trạng thái AI Cluster Engine thành công")
 
 @router.post("/generations/provider-sync")
 def sync_provider():
     """
-    Đồng bộ lại số dư ví và trạng thái từ Nhà Cung Cấp leeh.dev (bỏ qua bộ đệm cache)
+    Đồng bộ lại số dư quota và trạng thái từ hệ thống AI Cluster Engine (bỏ qua bộ đệm cache)
     """
     data = generation_service.get_provider_status(force_refresh=True)
-    return success_response(data.model_dump(), "Đồng bộ thành công số dư từ Nhà Cung Cấp")
+    return success_response(data.model_dump(), "Đồng bộ thành công số dư từ AI Cluster Engine")
 
 UPLOAD_DIR = settings.REFERENCES_UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -257,8 +257,30 @@ def get_job_image(
 
     img_url = job.image_url.strip()
 
-    # Nếu là URL ngoại vi (Unsplash, CDN, v.v.)
+    # Nếu là URL ngoại vi
     if img_url.startswith("http://") or img_url.startswith("https://"):
+        # Nếu URL trỏ tới nhà cung cấp upstream -> proxy dữ liệu ảnh trực tiếp để tuyệt đối không lộ domain NCC
+        if "leeh.dev" in img_url or "internal" in img_url:
+            try:
+                import urllib.request
+                import ssl
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                req = urllib.request.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, context=ctx, timeout=15) as uresp:
+                    data = uresp.read()
+                    content_type = uresp.headers.get_content_type() or "image/png"
+                    return Response(
+                        content=data,
+                        media_type=content_type,
+                        headers={
+                            "Cache-Control": "public, max-age=86400, immutable",
+                            "Content-Disposition": f'inline; filename="job-{job_id}.png"'
+                        }
+                    )
+            except Exception:
+                pass
         return RedirectResponse(url=img_url, status_code=302)
 
     # Nếu là chuỗi data URI: data:image/...;base64,...

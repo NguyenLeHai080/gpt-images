@@ -38,9 +38,11 @@ class GenerationService:
         if not raw_url:
             return None
         raw_url = raw_url.strip()
-        if raw_url.startswith("data:image/"):
-            return f"http://127.0.0.1:8001/api/v1/generations/jobs/{job_id}/image"
+        # Any data URI or upstream provider URL is served securely via our own internal image endpoint
+        if raw_url.startswith("data:image/") or "leeh.dev" in raw_url or "127.0.0.1:8001" in raw_url:
+            return f"/api/v1/generations/jobs/{job_id}/image"
         return raw_url
+
 
     def process_generation(
         self,
@@ -53,7 +55,7 @@ class GenerationService:
         Tiến hành xử lý tạo ảnh:
         1. Kiểm tra số dư ví của khách (>= 150đ)
         2. Tạo bản ghi Job PENDING
-        3. Gọi upstream tới NCC (https://api.leeh.dev)
+        3. Gọi upstream tới cụm xử lý AI Engine
         4. Xử lý trừ ví và ghi nhận chi phí/lợi nhuận khi thành công
         """
         prov_cost_unit, cust_price_unit, _ = pricing_service.get_model_financials(db, request.model)
@@ -470,7 +472,7 @@ class GenerationService:
 
     def get_provider_status(self, force_refresh: bool = False) -> ProviderStatus:
         """
-        Kiểm tra trạng thái kết nối và số dư ví NCC leeh.dev
+        Kiểm tra trạng thái kết nối và số dư quota AI Engine
         Có bộ nhớ đệm (TTL 60s) để loại bỏ 100% tình trạng lag giao diện do gọi mạng ngoài liên tục
         """
         now = time.time()
@@ -483,8 +485,8 @@ class GenerationService:
 
         status = ProviderStatus(
             is_connected=True,
-            provider_name="Leeh AI Cloud (api.leeh.dev)",
-            username=provider_client.DEFAULT_USER,
+            provider_name="Nexora AI Cluster Engine",
+            username="cluster-worker-01",
             wallet_balance=balance_val,
             currency=wallet_info.get("currency", "đ"),
             last_synced_at=datetime.now(),

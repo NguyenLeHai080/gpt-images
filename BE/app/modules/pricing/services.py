@@ -17,7 +17,7 @@ DEFAULT_SEEDS = [
     {
         "model": "gpt-image-2",
         "display_name": "GPT Image 2 Enterprise",
-        "provider": "Leeh AI Cloud",
+        "provider": "Nexora AI Core",
         "provider_cost": 120.0,
         "base_price": 150.0,
         "token_rate": 1024,
