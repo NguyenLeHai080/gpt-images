@@ -219,7 +219,7 @@ class GenerationService:
         mapped_ar, mapped_res = provider_client.normalize_resolution_and_aspect_ratio(
             ar_input, request.resolution or "1k"
         )
-        mapped_qual = provider_client.normalize_quality(getattr(request, 'quality', 'high'))
+        mapped_qual = provider_client.normalize_quality(getattr(request, 'quality', 'medium'))
         
         # Chuẩn hóa reference / references
         ref_list = []
@@ -227,6 +227,10 @@ class GenerationService:
             ref_list.extend([str(r).strip() for r in request.references if r and str(r).strip()])
         if request.reference and isinstance(request.reference, str) and request.reference.strip() and request.reference.strip() not in ref_list:
             ref_list.append(request.reference.strip())
+        
+        # Nếu có ảnh tham chiếu (Image-to-Image), bỏ qua cache để luôn sinh ảnh mới theo ảnh mẫu của khách
+        if ref_list:
+            request.no_cache = True
         
         # 2. KIỂM TRA SMART CACHE (Khóa SHA-256)
         cache_key = compute_cache_key(
@@ -291,7 +295,7 @@ class GenerationService:
                     model=cached_job.model,
                     aspect_ratio=cached_job.aspect_ratio,
                     resolution=cached_job.resolution or "1k",
-                    quality=cached_job.quality or "high",
+                    quality=cached_job.quality or "medium",
                     reference=cached_job.reference,
                     references=ref_list if ref_list else None,
                     image_url=self._format_job_image_url(cached_job.id, cached_job.image_url),
@@ -363,7 +367,7 @@ class GenerationService:
                 model=job.model,
                 aspect_ratio=job.aspect_ratio,
                 resolution=job.resolution or "1k",
-                quality=job.quality or "high",
+                quality=job.quality or "medium",
                 reference=job.reference,
                 references=ref_list if ref_list else None,
                 image_url=None,
@@ -463,7 +467,7 @@ class GenerationService:
                 model=job.model,
                 aspect_ratio=job.aspect_ratio,
                 resolution=job.resolution or "1k",
-                quality=job.quality or "high",
+                quality=job.quality or "medium",
                 reference=job.reference,
                 references=ref_list if ref_list else None,
                 image_url=self._format_job_image_url(job.id, job.image_url),

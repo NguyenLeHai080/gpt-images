@@ -123,7 +123,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
           <div>
             <span className="text-slate-400 block text-[10px]">Chất lượng (Quality):</span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-purple-700 uppercase mt-0.5 inline-block">
-              {job.quality || 'high'}
+              {job.quality || 'medium'}
             </span>
           </div>
           <div>

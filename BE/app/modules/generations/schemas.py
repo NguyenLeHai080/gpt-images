@@ -9,7 +9,7 @@ class ImageGenerationRequest(BaseModel):
     aspectRatio: Optional[str] = Field(default="1024x1024", description="Tỷ lệ khung hình camelCase (ví dụ: 1024x1024, 2048x2048, 16:9, 9:16)")
     aspect_ratio: Optional[str] = Field(default=None, description="Tỷ lệ khung hình snake_case (ví dụ: 1:1, 16:9, 9:16, 2048x2048)")
     resolution: Optional[str] = Field(default="1k", description="Độ phân giải kích thước pixel: 1k, 2k, 4k")
-    quality: Optional[str] = Field(default="high", description="Chất lượng render (Sampling/Denoising Steps): low, medium, high (hoặc standard, hd)")
+    quality: Optional[str] = Field(default="medium", description="Chất lượng render (Sampling/Denoising Steps): low, medium, high (hoặc standard, hd)")
     reference: Optional[str] = Field(default=None, description="URL ảnh tham chiếu đơn lẻ")
     references: Optional[List[str]] = Field(default=None, description="Danh sách URL ảnh tham chiếu")
     count: int = Field(default=1, ge=1, le=4, description="Số lượng ảnh tạo ra")
@@ -24,7 +24,7 @@ class ImageGenerationResponse(BaseModel):
     model: str
     aspect_ratio: str
     resolution: Optional[str] = "1k"
-    quality: Optional[str] = "high"
+    quality: Optional[str] = "medium"
     reference: Optional[str] = None
     references: Optional[List[str]] = None
     image_url: Optional[str] = None
@@ -49,7 +49,7 @@ class JobLogItem(BaseModel):
     model: str
     aspect_ratio: str
     resolution: Optional[str] = "1k"
-    quality: Optional[str] = "high"
+    quality: Optional[str] = "medium"
     reference: Optional[str] = None
     references: Optional[List[str]] = None
     status: str

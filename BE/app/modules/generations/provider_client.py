@@ -3,6 +3,7 @@ import json
 import ssl
 import os
 import base64
+import hashlib
 import urllib.request
 import urllib.error
 from typing import Dict, Any, Optional, Tuple, List
@@ -30,7 +31,7 @@ class ProviderClient:
         method: str = "GET",
         payload: Optional[Dict[str, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
-        timeout: int = 70
+        timeout: int = 240
     ) -> Tuple[int, Dict[str, Any]]:
         url = f"{self.BASE_URL}{endpoint}" if endpoint.startswith("/") else endpoint
         req_headers = {
@@ -158,21 +159,21 @@ class ProviderClient:
         return ar, res
 
     @staticmethod
-    def normalize_quality(quality: Optional[str] = "high") -> str:
+    def normalize_quality(quality: Optional[str] = "medium") -> str:
         """
         Chuẩn hóa mức độ chất lượng (Quality Steps):
         - low (draft / fast): Tối ưu tốc độ
-        - medium (standard): Cân bằng tiêu chuẩn
+        - medium (standard): Cân bằng tiêu chuẩn (Mặc định)
         - high (hd / ultra): Tối đa chi tiết vi mô và texture
         """
-        q = (quality or "high").lower().strip()
+        q = (quality or "medium").lower().strip()
         if q in ("low", "fast", "draft"):
             return "low"
         elif q in ("medium", "standard", "normal"):
             return "medium"
         elif q in ("high", "hd", "ultra"):
             return "high"
-        return "high"
+        return "medium"
 
     def generate_image_upstream(
         self,
@@ -180,7 +181,7 @@ class ProviderClient:
         model: str = "gpt-image-2",
         aspect_ratio: str = "1024x1024",
         resolution: str = "1k",
-        quality: str = "high",
+        quality: str = "medium",
         reference: Optional[str] = None,
         references: Optional[List[str]] = None,
         count: int = 1,
@@ -235,6 +236,7 @@ class ProviderClient:
 
         if ref_list:
             upload_dir = settings.REFERENCES_UPLOAD_DIR
+            os.makedirs(upload_dir, exist_ok=True)
             public_base = getattr(settings, "PUBLIC_API_URL", "https://api-gpt-images.nexoratech.com.vn").rstrip("/")
             resolved_refs: List[str] = []
             for r in ref_list:
@@ -249,12 +251,40 @@ class ProviderClient:
                 if r_str.startswith("/static/uploads/references/"):
                     r_str = f"{public_base}{r_str}"
                 
-                # 3. Nếu là URL công khai (http:// hoặc https://) không phải localhost -> upstream tải trực tiếp cực nhanh
+                # 3. Nếu là URL bên ngoài (cdn.plenxai.com, imgur, cdn lạ...)
+                # Tự động tải về máy chủ local và trỏ về CDN nội bộ để Upstream không bị Cloudflare anti-bot / 502 / timeout
+                if (r_str.startswith("http://") or r_str.startswith("https://")) and not r_str.startswith(public_base) and "nexoratech.com.vn" not in r_str and "localhost" not in r_str and "127.0.0.1" not in r_str:
+                    try:
+                        url_hash = hashlib.md5(r_str.encode('utf-8')).hexdigest()[:16]
+                        ext = ".png"
+                        if ".jpg" in r_str.lower() or ".jpeg" in r_str.lower():
+                            ext = ".jpg"
+                        elif ".webp" in r_str.lower():
+                            ext = ".webp"
+                        saved_name = f"ext_{url_hash}{ext}"
+                        saved_path = os.path.join(upload_dir, saved_name)
+                        
+                        if not os.path.exists(saved_path) or os.path.getsize(saved_path) == 0:
+                            req_dl = urllib.request.Request(r_str, headers={"User-Agent": self.USER_AGENT})
+                            with urllib.request.urlopen(req_dl, timeout=15) as dl_resp:
+                                with open(saved_path, "wb") as f_out:
+                                    f_out.write(dl_resp.read())
+                        
+                        resolved_url = f"{public_base}/static/uploads/references/{saved_name}"
+                        resolved_refs.append(resolved_url)
+                        continue
+                    except Exception as e:
+                        print(f"[ProviderClient] Không thể lưu trước ảnh tham chiếu ngoài ({r_str}): {e}")
+                        # Fallback cho upstream thử tiếp nếu tải không thành công
+                        resolved_refs.append(r_str)
+                        continue
+
+                # 4. Nếu là URL công khai nội bộ
                 if (r_str.startswith("http://") or r_str.startswith("https://")) and "localhost" not in r_str and "127.0.0.1" not in r_str:
                     resolved_refs.append(r_str)
                     continue
 
-                # 4. Fallback chỉ khi trên local offline/localhost không có public URL thì mới chuyển sang Base64
+                # 5. Fallback chỉ khi trên local offline/localhost không có public URL thì mới chuyển sang Base64
                 if "/static/uploads/references/" in r_str:
                     fname = r_str.split("/static/uploads/references/")[-1]
                     fpath = os.path.join(upload_dir, fname)
@@ -280,7 +310,7 @@ class ProviderClient:
             method="POST",
             payload=payload,
             headers=headers,
-            timeout=120
+            timeout=240
         )
 
         # Cơ chế Self-Healing: Nếu NCC báo "invalid or disabled API key", tự động re-auth và cấp key mới ngay lập tức
@@ -305,7 +335,7 @@ class ProviderClient:
                         method="POST",
                         payload=payload,
                         headers=headers,
-                        timeout=120
+                        timeout=240
                     )
             except Exception as e:
                 print(f"[ProviderClient] Lỗi khi tự động cấp mới key: {e}")

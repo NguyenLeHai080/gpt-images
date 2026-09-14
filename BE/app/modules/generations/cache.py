@@ -13,7 +13,7 @@ def compute_cache_key(
     aspect_ratio: str,
     resolution: str,
     references: Optional[List[str]] = None,
-    quality: Optional[str] = "high"
+    quality: Optional[str] = "medium"
 ) -> str:
     """
     Sinh khóa băm SHA-256 duy nhất từ các thuộc tính cốt lõi của yêu cầu tạo ảnh.
@@ -23,7 +23,7 @@ def compute_cache_key(
     norm_prompt = (prompt or "").strip().lower()
     norm_ar = (aspect_ratio or "1024x1024").strip().lower()
     norm_res = (resolution or "1k").strip().lower()
-    norm_qual = (quality or "high").strip().lower()
+    norm_qual = (quality or "medium").strip().lower()
     
     clean_refs = sorted([str(r).strip() for r in references if r and str(r).strip()]) if references else []
     refs_str = json.dumps(clean_refs, sort_keys=True)
@@ -93,7 +93,7 @@ class PromptCacheManager:
         image_url: str,
         provider_task_id: Optional[str] = None,
         references: Optional[List[str]] = None,
-        quality: Optional[str] = "high"
+        quality: Optional[str] = "medium"
     ) -> None:
         cache_data = {
             "id": key,
@@ -101,7 +101,7 @@ class PromptCacheManager:
             "model": model,
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,
-            "quality": quality or "high",
+            "quality": quality or "medium",
             "image_url": image_url,
             "provider_task_id": provider_task_id,
             "hit_count": 0
@@ -116,7 +116,7 @@ class PromptCacheManager:
             if existing:
                 existing.image_url = image_url
                 existing.provider_task_id = provider_task_id
-                existing.quality = quality or "high"
+                existing.quality = quality or "medium"
                 existing.last_accessed_at = datetime.now()
             else:
                 new_cache = ImageGenerationCache(
@@ -125,7 +125,7 @@ class PromptCacheManager:
                     model=model,
                     aspect_ratio=aspect_ratio,
                     resolution=resolution,
-                    quality=quality or "high",
+                    quality=quality or "medium",
                     references_json=json.dumps(references) if references else None,
                     image_url=image_url,
                     provider_task_id=provider_task_id,

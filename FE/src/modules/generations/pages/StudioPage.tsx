@@ -198,9 +198,9 @@ export const StudioPage: React.FC = () => {
                   ? 'bg-blue-50 text-blue-700 border-blue-200'
                   : 'bg-purple-50 text-purple-700 border-purple-200'
               }`}
-              title={`Chất lượng: ${record.quality || 'high'}`}
+              title={`Chất lượng: ${record.quality || 'medium'}`}
             >
-              {record.quality ? record.quality.toUpperCase() : 'HIGH'}
+              {record.quality ? record.quality.toUpperCase() : 'MEDIUM'}
             </span>
           </div>
           <span className="text-[10px] text-slate-400 block mt-0.5 whitespace-nowrap">

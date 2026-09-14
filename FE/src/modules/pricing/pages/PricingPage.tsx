@@ -51,7 +51,7 @@ export const PricingPage: React.FC = () => {
   const [monthlyImages, setMonthlyImages] = useState(3000);
   const [cacheHitRate, setCacheHitRate] = useState(35);
   const [resolution, setResolution] = useState('2k');
-  const [quality, setQuality] = useState('high');
+  const [quality, setQuality] = useState('medium');
   const [simulation, setSimulation] = useState<PricingSimulatorResponse | null>(null);
 
   const loadPricing = useCallback(async () => {

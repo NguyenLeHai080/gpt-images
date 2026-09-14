@@ -38,7 +38,7 @@ const SAMPLE_PROMPTS = [
 export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [prompt, setPrompt] = useState('');
   const [resolution, setResolution] = useState<'1k' | '2k' | '4k'>('2k');
-  const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('high');
+  const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [referenceUrl, setReferenceUrl] = useState('');
   const [showReferenceInput, setShowReferenceInput] = useState(true);
