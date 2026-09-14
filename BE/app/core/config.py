@@ -40,6 +40,9 @@ class Settings:
         "*"
     ]
     
+    # Public Gateway Base URL for Upstream Reference Delivery
+    PUBLIC_API_URL: str = os.getenv("PUBLIC_API_URL", "https://api-gpt-images.nexoratech.com.vn")
+
     # Upload Directories
     BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")

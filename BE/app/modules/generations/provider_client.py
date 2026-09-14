@@ -235,10 +235,28 @@ class ProviderClient:
 
         if ref_list:
             upload_dir = settings.REFERENCES_UPLOAD_DIR
+            public_base = getattr(settings, "PUBLIC_API_URL", "https://api-gpt-images.nexoratech.com.vn").rstrip("/")
             resolved_refs: List[str] = []
             for r in ref_list:
-                if r and "/static/uploads/references/" in r:
-                    fname = r.split("/static/uploads/references/")[-1]
+                if not r:
+                    continue
+                r_str = str(r).strip()
+                # 1. Nếu là HTTP URL của domain này, ép sang HTTPS để upstream tải nhanh qua Cloudflare CDN
+                if r_str.startswith("http://api-gpt-images.nexoratech.com.vn"):
+                    r_str = r_str.replace("http://", "https://")
+                
+                # 2. Nếu là đường dẫn tương đối /static/uploads/references/... -> ghép với public_base
+                if r_str.startswith("/static/uploads/references/"):
+                    r_str = f"{public_base}{r_str}"
+                
+                # 3. Nếu là URL công khai (http:// hoặc https://) không phải localhost -> upstream tải trực tiếp cực nhanh
+                if (r_str.startswith("http://") or r_str.startswith("https://")) and "localhost" not in r_str and "127.0.0.1" not in r_str:
+                    resolved_refs.append(r_str)
+                    continue
+
+                # 4. Fallback chỉ khi trên local offline/localhost không có public URL thì mới chuyển sang Base64
+                if "/static/uploads/references/" in r_str:
+                    fname = r_str.split("/static/uploads/references/")[-1]
                     fpath = os.path.join(upload_dir, fname)
                     if os.path.exists(fpath):
                         with open(fpath, "rb") as bf:
@@ -247,7 +265,8 @@ class ProviderClient:
                             mime = f"image/{fext}" if fext != "jpg" else "image/jpeg"
                             resolved_refs.append(f"data:{mime};base64,{base64.b64encode(bytes_data).decode('utf-8')}")
                             continue
-                resolved_refs.append(r)
+
+                resolved_refs.append(r_str)
 
             payload["references"] = resolved_refs
             payload["reference"] = resolved_refs[0]
