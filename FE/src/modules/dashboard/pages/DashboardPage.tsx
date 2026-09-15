@@ -81,10 +81,16 @@ export const DashboardPage: React.FC = () => {
 
               {/* CHỈ hiển thị Ví NCC cho Admin khi xem Toàn hệ thống */}
               {!isCustomerView ? (
-                <Link to="/app/pnl" className="hover:opacity-85 transition-opacity">
-                  <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                    <Wallet size={12} className="text-emerald-400" /> Ví NCC: 100.000 đ (100% Quota)
-                  </span>
+                <Link to="/app/providers" className="hover:opacity-85 transition-opacity">
+                  {data.provider_balance && data.provider_balance > 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <Wallet size={12} className="text-emerald-400" /> Ví NCC: {Math.round(data.provider_balance).toLocaleString('vi-VN')} đ
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Wallet size={12} className="text-amber-400" /> Ví NCC: Chưa cấu hình
+                    </span>
+                  )}
                 </Link>
               ) : (
                 /* Tài khoản user/khách: CHỈ hiển thị ví của chính khách đó */
