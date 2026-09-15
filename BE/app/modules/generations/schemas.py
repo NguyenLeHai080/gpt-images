@@ -106,12 +106,12 @@ class ProviderStatus(BaseModel):
     currency: str
     last_synced_at: datetime
     low_balance_warning: bool = False
-    budget_total: Optional[float] = 100000.0
+    budget_total: Optional[float] = 0.0
     budget_used: Optional[float] = 0.0
-    budget_remaining: Optional[float] = 100000.0
+    budget_remaining: Optional[float] = 0.0
     used_percent: Optional[float] = 0.0
     key_masked: Optional[str] = None
-    status_text: Optional[str] = "Bình thường"
+    status_text: Optional[str] = "Chưa cấu hình"
     models_rates: Optional[List[ModelRateItem]] = None
 
 class UpdateJobRequest(BaseModel):
