@@ -41,7 +41,7 @@ class ProviderClient:
                 db.close()
         except Exception:
             pass
-        return 100000.0
+        return 0.0
 
     @property
     def base_url(self) -> str:

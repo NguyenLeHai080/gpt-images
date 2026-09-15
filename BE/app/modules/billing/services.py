@@ -386,8 +386,8 @@ class BillingService:
                 for l in logs
             ]
 
-            b_tot = float(wallet_info.get("budget_total", 100000.0))
-            b_rem = float(wallet_info.get("budget_remaining", 100000.0))
+            b_tot = float(wallet_info.get("budget_total", 0.0))
+            b_rem = float(wallet_info.get("budget_remaining", 0.0))
             b_used = float(wallet_info.get("budget_used", 0.0))
             used_pct = float(wallet_info.get("used_percent", 0.0))
             est_images = int(b_rem // 75.0) if b_rem > 0 else 0
@@ -449,7 +449,7 @@ class BillingService:
         db.query(ProviderBudgetLog).delete()
         db.commit()
         from app.modules.generations.provider_client import provider_client
-        provider_client.custom_budget_total = 100000.0
+        provider_client.custom_budget_total = 0.0
         return BillingService.get_provider_budget_overview(db)
 
     @staticmethod
@@ -463,7 +463,7 @@ class BillingService:
         if latest and latest.budget_after and latest.budget_after > 0:
             provider_client.custom_budget_total = float(latest.budget_after)
         else:
-            provider_client.custom_budget_total = 100000.0
+            provider_client.custom_budget_total = 0.0
         return BillingService.get_provider_budget_overview(db)
 
 billing_service = BillingService()
