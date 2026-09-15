@@ -6,6 +6,8 @@ import type {
   BankAccountItem,
   SepayTransactionItem,
   CreditConfigItem,
+  ProviderBudgetOverview,
+  TopupProviderBudgetPayload,
 } from '../types';
 
 export const billingApi = {
@@ -32,4 +34,33 @@ export const billingApi = {
   getCreditConfig: async (): Promise<ApiResponse<CreditConfigItem>> => {
     return apiClient.get<CreditConfigItem>('/billing/credit-config');
   },
+
+  getProviderBudget: async (): Promise<ApiResponse<ProviderBudgetOverview>> => {
+    return apiClient.get<ProviderBudgetOverview>('/billing/provider-budget');
+  },
+
+  topupProviderBudget: async (payload: TopupProviderBudgetPayload): Promise<ApiResponse<ProviderBudgetOverview>> => {
+    return apiClient.post<ProviderBudgetOverview>('/billing/provider-budget/top-up', payload, {
+      successToast: `Đã ghi nhận nạp thành công ${payload.amount.toLocaleString()} đ vào ngân sách NCC!`,
+    });
+  },
+
+  syncProviderBudget: async (): Promise<ApiResponse<ProviderBudgetOverview>> => {
+    return apiClient.post<ProviderBudgetOverview>('/billing/provider-budget/sync', {}, {
+      successToast: 'Đã đồng bộ ngân sách QuotaGuard thời gian thực!',
+    });
+  },
+
+  clearProviderBudgetLogs: async (): Promise<ApiResponse<ProviderBudgetOverview>> => {
+    return apiClient.delete<ProviderBudgetOverview>('/billing/provider-budget/logs', {
+      successToast: 'Đã xóa toàn bộ nhật ký nạp và đặt lại ngân sách về 100.000 đ!',
+    });
+  },
+
+  deleteProviderBudgetLog: async (logId: string): Promise<ApiResponse<ProviderBudgetOverview>> => {
+    return apiClient.delete<ProviderBudgetOverview>(`/billing/provider-budget/logs/${logId}`, {
+      successToast: 'Đã xóa bản ghi lịch sử nạp!',
+    });
+  },
 };
+
