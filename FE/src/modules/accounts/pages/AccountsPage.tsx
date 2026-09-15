@@ -191,7 +191,7 @@ export const AccountsPage: React.FC = () => {
     },
     {
       key: 'provider_key',
-      title: 'API Key NCC (120đ)',
+      title: 'API Key NCC (75đ)',
       render: (_, record) => {
         if (record.has_provider_key) {
           return (
@@ -321,7 +321,7 @@ export const AccountsPage: React.FC = () => {
                 type="button"
                 onClick={() => handleOpenProviderKeyModal(record)}
                 className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Gán API Key Nhà Cung Cấp (120đ/ảnh)"
+                title="Gán API Key Nhà Cung Cấp (75đ/ảnh)"
               >
                 <KeyRound size={14} className="text-blue-500" />
               </button>

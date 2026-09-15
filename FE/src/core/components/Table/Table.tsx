@@ -195,7 +195,7 @@ export function Table<T extends Record<string, any>>({
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`py-3 px-4 text-xs ${
+                        className={`py-3 px-4 text-xs whitespace-nowrap ${
                           col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : 'text-left'
                         } ${bordered ? 'border-r border-slate-100 last:border-r-0' : ''}`}
                       >

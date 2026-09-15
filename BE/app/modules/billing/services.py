@@ -3,10 +3,11 @@ import re
 import json
 import uuid
 from datetime import datetime
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.modules.auth.models import User
-from app.modules.billing.models import Wallet, Transaction, SepayWebhookLog
+from app.modules.billing.models import Wallet, Transaction, SepayWebhookLog, ProviderBudgetLog
 from app.modules.billing.schemas import (
     WalletSummary,
     TransactionItem,
@@ -14,19 +15,36 @@ from app.modules.billing.schemas import (
     SepayTransactionItem,
     SepayWebhookPayload,
     CreditConfigItem,
+    ProviderBudgetOverview,
+    ProviderBudgetLogItem,
 )
 
 import urllib.parse
 
 class BillingService:
     @staticmethod
-    def get_wallet(user_id: Optional[str] = None, db: Optional[Session] = None) -> WalletSummary:
+    def get_wallet(user_id: Optional[str] = None, is_admin: bool = False, db: Optional[Session] = None) -> WalletSummary:
         close_session = False
         if db is None:
             db = SessionLocal()
             close_session = True
 
         try:
+            if is_admin:
+                # Toàn hệ thống / Dòng tiền Doanh nghiệp
+                bal = db.query(func.sum(Wallet.balance)).scalar() or 0.0
+                dep = db.query(func.sum(Wallet.total_deposited)).scalar() or 0.0
+                spent = db.query(func.sum(Wallet.api_spent)).scalar() or 0.0
+                return WalletSummary(
+                    balance_amount=f"{int(bal):,}".replace(",", ".") + " đ",
+                    total_deposited=f"{int(dep):,}".replace(",", ".") + " đ",
+                    api_spent=f"{int(spent):,}".replace(",", ".") + " đ",
+                    currency="VND",
+                    balance=bal,
+                    available_images=int(bal // 150),
+                    is_exhausted=(bal < 150)
+                )
+
             record = None
             if user_id:
                 record = db.query(Wallet).filter(Wallet.user_id == user_id).first()
@@ -51,7 +69,9 @@ class BillingService:
                 return WalletSummary()
 
             # Format formatted numbers
-            bal_str = f"{int(record.balance):,}".replace(",", ".") + " đ"
+            bal_val = record.balance if record else 0.0
+            avail_imgs = int(bal_val // 150) if bal_val >= 0 else 0
+            bal_str = f"{int(bal_val):,}".replace(",", ".") + " đ"
             dep_str = f"{int(record.total_deposited):,}".replace(",", ".") + " đ"
             spent_str = f"{int(record.api_spent):,}".replace(",", ".") + " đ"
 
@@ -59,7 +79,10 @@ class BillingService:
                 balance_amount=bal_str,
                 total_deposited=dep_str,
                 api_spent=spent_str,
-                currency=record.currency
+                currency=record.currency,
+                balance=bal_val,
+                available_images=avail_imgs,
+                is_exhausted=(bal_val < 150)
             )
         finally:
             if close_session:
@@ -102,7 +125,8 @@ class BillingService:
         memo = f"SEVQR GPT {user_id}"
         account_number = "109873538727"
         account_holder = "NGUYEN LE HAI"
-        qr_url = f"https://vietqr.app/img?bank=VietinBank&acc={account_number}&template=compact&des={urllib.parse.quote(memo)}&showinfo=true&holder={urllib.parse.quote(account_holder)}"
+        # Official VietQR High-Speed Cloudflare CDN (loads in < 500ms)
+        qr_url = f"https://img.vietqr.io/image/vietinbank-{account_number}-compact2.png?addInfo={urllib.parse.quote(memo)}&accountName={urllib.parse.quote(account_holder)}"
 
         return [
             BankAccountItem(
@@ -145,8 +169,8 @@ class BillingService:
                         transaction_content=l.content or "",
                         reference_number=l.reference_code or f"REF_{l.id[:8]}",
                         status="COMPLETED" if l.status == "PROCESSED" else l.status,
-                        provider_cost=round(float(l.transfer_amount or 0) * (120.0 / 150.0)),
-                        gross_profit=round(float(l.transfer_amount or 0) * (30.0 / 150.0)),
+                        provider_cost=round(float(l.transfer_amount or 0) * (75.0 / 150.0)),
+                        gross_profit=round(float(l.transfer_amount or 0) * (75.0 / 150.0)),
                         images_count=int((l.transfer_amount or 0) // 150)
                     )
                     for l in logs
@@ -337,5 +361,111 @@ class BillingService:
     def get_credit_config() -> CreditConfigItem:
         return CreditConfigItem()
 
+    @staticmethod
+    def get_provider_budget_overview(db: Optional[Session] = None) -> ProviderBudgetOverview:
+        close_session = False
+        if db is None:
+            db = SessionLocal()
+            close_session = True
+
+        try:
+            from app.modules.generations.provider_client import provider_client
+            wallet_info = provider_client.get_wallet_balance()
+
+            logs = db.query(ProviderBudgetLog).order_by(ProviderBudgetLog.created_at.desc()).limit(20).all()
+            recent_topups = [
+                ProviderBudgetLogItem(
+                    id=l.id,
+                    amount=l.amount,
+                    budget_before=l.budget_before,
+                    budget_after=l.budget_after,
+                    note=l.note,
+                    created_by=l.created_by,
+                    created_at=l.created_at.strftime("%H:%M:%S %d/%m/%Y") if isinstance(l.created_at, datetime) else str(l.created_at)
+                )
+                for l in logs
+            ]
+
+            b_tot = float(wallet_info.get("budget_total", 100000.0))
+            b_rem = float(wallet_info.get("budget_remaining", 100000.0))
+            b_used = float(wallet_info.get("budget_used", 0.0))
+            used_pct = float(wallet_info.get("used_percent", 0.0))
+            est_images = int(b_rem // 75.0) if b_rem > 0 else 0
+            is_active = (wallet_info.get("status") == "active")
+
+            return ProviderBudgetOverview(
+                provider_name=wallet_info.get("raw", {}).get("provider") or "Xompet AI Gateway",
+                key_masked=wallet_info.get("key_masked", "sk-9r-N1...zz"),
+                status=wallet_info.get("status", "active"),
+                status_text=wallet_info.get("status_text", "Bình thường"),
+                is_active=is_active,
+                budget_total=b_tot,
+                budget_used=b_used,
+                budget_remaining=b_rem,
+                used_percent=used_pct,
+                available_images_estimate=est_images,
+                models_rates=wallet_info.get("models_rates"),
+                last_synced_at=datetime.now().strftime("%H:%M:%S %d/%m/%Y"),
+                recent_topups=recent_topups
+            )
+        finally:
+            if close_session:
+                db.close()
+
+    @staticmethod
+    def topup_provider_budget(db: Session, amount: float, note: Optional[str], current_user: User) -> ProviderBudgetOverview:
+        if amount <= 0:
+            raise ValueError("Số tiền nạp ngân sách phải lớn hơn 0")
+
+        from app.modules.generations.provider_client import provider_client
+        current_tot = provider_client.get_configured_budget_total()
+        new_tot = current_tot + float(amount)
+
+        log = ProviderBudgetLog(
+            id=f"pbl_{uuid.uuid4().hex[:12]}",
+            provider_name="Xompet AI Gateway",
+            key_masked=provider_client.raw_api_key[:10] + "..." + provider_client.raw_api_key[-4:],
+            amount=float(amount),
+            budget_before=current_tot,
+            budget_after=new_tot,
+            note=note or "Nạp ngân sách qua Web Admin",
+            created_by=current_user.full_name or current_user.email,
+            created_at=datetime.utcnow()
+        )
+        db.add(log)
+        db.commit()
+
+        provider_client.custom_budget_total = new_tot
+        return BillingService.get_provider_budget_overview(db)
+
+    @staticmethod
+    def sync_provider_budget(db: Session) -> ProviderBudgetOverview:
+        from app.modules.generations.services import generation_service
+        generation_service.get_provider_status(force_refresh=True)
+        return BillingService.get_provider_budget_overview(db)
+
+    @staticmethod
+    def clear_provider_budget_logs(db: Session) -> ProviderBudgetOverview:
+        db.query(ProviderBudgetLog).delete()
+        db.commit()
+        from app.modules.generations.provider_client import provider_client
+        provider_client.custom_budget_total = 100000.0
+        return BillingService.get_provider_budget_overview(db)
+
+    @staticmethod
+    def delete_provider_budget_log(db: Session, log_id: str) -> ProviderBudgetOverview:
+        log = db.query(ProviderBudgetLog).filter(ProviderBudgetLog.id == log_id).first()
+        if log:
+            db.delete(log)
+            db.commit()
+        from app.modules.generations.provider_client import provider_client
+        latest = db.query(ProviderBudgetLog).order_by(ProviderBudgetLog.created_at.desc()).first()
+        if latest and latest.budget_after and latest.budget_after > 0:
+            provider_client.custom_budget_total = float(latest.budget_after)
+        else:
+            provider_client.custom_budget_total = 100000.0
+        return BillingService.get_provider_budget_overview(db)
+
 billing_service = BillingService()
+
 

@@ -57,10 +57,27 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric }) => {
     }
   };
 
+  const getBadgeClass = () => {
+    switch (metric.badge_type) {
+      case 'danger':
+        return 'bg-rose-50 text-rose-700 border-rose-200/80';
+      case 'warning':
+        return 'bg-amber-50 text-amber-700 border-amber-200/80';
+      case 'success':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
+      case 'info':
+        return 'bg-blue-50 text-blue-700 border-blue-200/80';
+      case 'purple':
+        return 'bg-purple-50 text-purple-700 border-purple-200/80';
+      default:
+        return theme.badgeClass;
+    }
+  };
+
   return (
     <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 relative overflow-hidden group flex flex-col justify-between gap-4">
       {/* Top Accent Line */}
-      <div className={`absolute top-0 left-0 right-0 h-1 ${theme.topLine}`} />
+      <div className={`absolute top-0 left-0 right-0 h-1 ${metric.badge_type === 'danger' ? 'bg-rose-500' : theme.topLine}`} />
 
       {/* Decorative Glow */}
       <div className={`absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-gradient-to-br ${theme.accent} blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-300`} />
@@ -81,7 +98,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ metric }) => {
       </div>
 
       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs relative z-10">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${theme.badgeClass}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${getBadgeClass()}`}>
           {metric.badge_text}
         </span>
       </div>

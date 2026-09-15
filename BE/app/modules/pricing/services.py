@@ -15,10 +15,60 @@ from app.modules.pricing.schemas import (
 
 DEFAULT_SEEDS = [
     {
+        "model": "gpt-image-2.5-flare",
+        "display_name": "GPT Image 2.5 Flare (Ultra HDR)",
+        "provider": "Xompet AI Gateway",
+        "provider_cost": 75.0,
+        "base_price": 150.0,
+        "token_rate": 1650,
+        "currency": "VND",
+        "unit": "ảnh",
+        "status": "ACTIVE",
+        "latency_range": "25ms (Cache) - 3.5s (Gen)",
+        "smart_cache_support": True,
+        "cache_cost": 0.0,
+        "resolutions": [
+            {"key": "1k", "label": "1K Standard", "dimension": "1024x1024", "multiplier": 1.0, "unit_price": 150.0},
+            {"key": "2k", "label": "2K Crisp HD", "dimension": "2048x2048", "multiplier": 1.0, "unit_price": 150.0},
+            {"key": "4k", "label": "4K Ultra High", "dimension": "4096x4096", "multiplier": 1.0, "unit_price": 150.0},
+        ],
+        "qualities": [
+            {"key": "low", "label": "Low (Draft/Fast)", "multiplier": 1.0, "description": "Tốc độ cao nhất, phác thảo ý tưởng nhanh"},
+            {"key": "medium", "label": "Medium (Balanced)", "multiplier": 1.0, "description": "Chất lượng tiêu chuẩn, cân bằng độ nét"},
+            {"key": "high", "label": "High (Ultra Detail)", "multiplier": 1.0, "description": "Độ chi tiết tối đa, texture và ánh sáng chân thực"},
+        ],
+        "description": "Mô hình sinh ảnh thế hệ 2.5 đỉnh cao với độ sắc nét chân thực, cân bằng ánh sáng HDR rực rỡ và độ phân giải thực lên đến 4K."
+    },
+    {
+        "model": "gpt-image-2.5-sunburst",
+        "display_name": "GPT Image 2.5 Sunburst (Creative Color)",
+        "provider": "Xompet AI Gateway",
+        "provider_cost": 75.0,
+        "base_price": 150.0,
+        "token_rate": 1650,
+        "currency": "VND",
+        "unit": "ảnh",
+        "status": "ACTIVE",
+        "latency_range": "25ms (Cache) - 3.5s (Gen)",
+        "smart_cache_support": True,
+        "cache_cost": 0.0,
+        "resolutions": [
+            {"key": "1k", "label": "1K Standard", "dimension": "1024x1024", "multiplier": 1.0, "unit_price": 150.0},
+            {"key": "2k", "label": "2K Crisp HD", "dimension": "2048x2048", "multiplier": 1.0, "unit_price": 150.0},
+            {"key": "4k", "label": "4K Ultra High", "dimension": "4096x4096", "multiplier": 1.0, "unit_price": 150.0},
+        ],
+        "qualities": [
+            {"key": "low", "label": "Low (Draft/Fast)", "multiplier": 1.0, "description": "Tốc độ cao nhất, phác thảo ý tưởng nhanh"},
+            {"key": "medium", "label": "Medium (Balanced)", "multiplier": 1.0, "description": "Chất lượng tiêu chuẩn, cân bằng độ nét"},
+            {"key": "high", "label": "High (Ultra Detail)", "multiplier": 1.0, "description": "Độ chi tiết tối đa, texture và ánh sáng chân thực"},
+        ],
+        "description": "Mô hình sinh ảnh 2.5 chuyên biệt cho màu sắc nghệ thuật sống động, ánh sáng tương phản điện ảnh và kết cấu chi tiết."
+    },
+    {
         "model": "gpt-image-2",
-        "display_name": "GPT Image 2 Enterprise",
-        "provider": "Nexora AI Core",
-        "provider_cost": 120.0,
+        "display_name": "GPT Image 2 Standard",
+        "provider": "Xompet AI Gateway",
+        "provider_cost": 70.0,
         "base_price": 150.0,
         "token_rate": 1024,
         "currency": "VND",
@@ -37,17 +87,65 @@ DEFAULT_SEEDS = [
             {"key": "medium", "label": "Medium (Balanced)", "multiplier": 1.0, "description": "Chất lượng tiêu chuẩn, cân bằng độ nét"},
             {"key": "high", "label": "High (Ultra Detail)", "multiplier": 1.0, "description": "Độ chi tiết tối đa, texture và ánh sáng chân thực"},
         ],
-        "description": "Mô hình thế hệ mới với khả năng hiểu prompt tự nhiên tiếng Việt, hỗ trợ tỷ lệ khung hình tùy chỉnh và cache tức thì 25ms."
+        "description": "Mô hình chuẩn mực thế hệ 2.0, ổn định và tối ưu chi phí với độ nét tiêu chuẩn cao."
+    },
+    {
+        "model": "nanobanana-2",
+        "display_name": "NanoBanana 2 Fast Edition",
+        "provider": "Xompet AI Gateway",
+        "provider_cost": 50.0,
+        "base_price": 150.0,
+        "token_rate": 1024,
+        "currency": "VND",
+        "unit": "ảnh",
+        "status": "ACTIVE",
+        "latency_range": "25ms (Cache) - 2.5s (Gen)",
+        "smart_cache_support": True,
+        "cache_cost": 0.0,
+        "resolutions": [
+            {"key": "1k", "label": "1K Standard", "dimension": "1024x1024", "multiplier": 1.0, "unit_price": 150.0},
+            {"key": "2k", "label": "2K Crisp HD", "dimension": "2048x2048", "multiplier": 1.0, "unit_price": 150.0},
+        ],
+        "qualities": [
+            {"key": "low", "label": "Low (Draft/Fast)", "multiplier": 1.0, "description": "Tốc độ cao nhất, phác thảo ý tưởng nhanh"},
+            {"key": "medium", "label": "Medium (Balanced)", "multiplier": 1.0, "description": "Chất lượng tiêu chuẩn, cân bằng độ nét"},
+            {"key": "high", "label": "High (Ultra Detail)", "multiplier": 1.0, "description": "Độ chi tiết tối đa, texture và ánh sáng chân thực"},
+        ],
+        "description": "Mô hình sinh ảnh siêu tốc, chi phí tiết kiệm tối đa, thích hợp cho tạo nội dung hàng loạt."
+    },
+    {
+        "model": "gemini-3.1-flash-image-preview",
+        "display_name": "Gemini 3.1 Flash Image Preview",
+        "provider": "AI Cluster Engine",
+        "provider_cost": 50.0,
+        "base_price": 150.0,
+        "token_rate": 1650,
+        "currency": "VND",
+        "unit": "ảnh",
+        "status": "ACTIVE",
+        "latency_range": "20ms (Cache) - 2.8s (Gen)",
+        "smart_cache_support": True,
+        "cache_cost": 0.0,
+        "resolutions": [
+            {"key": "1k", "label": "1K Standard", "dimension": "1024x1024", "multiplier": 1.0, "unit_price": 150.0},
+            {"key": "2k", "label": "2K Crisp HD", "dimension": "2048x2048", "multiplier": 1.0, "unit_price": 150.0},
+        ],
+        "qualities": [
+            {"key": "low", "label": "Low (Draft/Fast)", "multiplier": 1.0, "description": "Tốc độ cao nhất"},
+            {"key": "medium", "label": "Medium (Balanced)", "multiplier": 1.0, "description": "Chất lượng tiêu chuẩn"},
+            {"key": "high", "label": "High (Ultra Detail)", "multiplier": 1.0, "description": "Độ chi tiết tối đa"},
+        ],
+        "description": "Mô hình Gemini 3.1 Flash thế hệ mới với độ trễ thấp, màu sắc chân thực và tối ưu chi phí."
     }
 ]
 
 class PricingService:
     def ensure_seeded(self, db: Session):
-        """Khởi tạo seed mặc định gpt-image-2 nếu chưa tồn tại"""
+        """Khởi tạo seed mặc định các model AI thế hệ mới nếu chưa tồn tại"""
         try:
-            count = db.query(ModelPricing).filter(ModelPricing.model == "gpt-image-2").count()
-            if count == 0:
-                for s in DEFAULT_SEEDS:
+            for s in DEFAULT_SEEDS:
+                rec = db.query(ModelPricing).filter(ModelPricing.model == s["model"]).first()
+                if not rec:
                     record = ModelPricing(
                         model=s["model"],
                         display_name=s["display_name"],
@@ -66,7 +164,14 @@ class PricingService:
                         description=s["description"]
                     )
                     db.add(record)
-                db.commit()
+                else:
+                    # Tự động đồng bộ cập nhật giá vốn và làm sạch mô tả
+                    if s["model"] == "gpt-image-2" and rec.provider_cost == 120.0:
+                        rec.provider_cost = 70.0
+                        rec.display_name = s["display_name"]
+                    if rec.description and ("xompet" in rec.description.lower() or "chi phí vốn" in rec.description.lower()):
+                        rec.description = s["description"]
+            db.commit()
         except Exception as e:
             db.rollback()
             print(f"[PricingService] Warning on ensure_seeded: {e}")
@@ -85,11 +190,19 @@ class PricingService:
                 profit_amt = (r.base_price - r.provider_cost) if is_admin else None
                 profit_margin = round(((r.base_price - r.provider_cost) / r.base_price * 100), 1) if (is_admin and r.base_price > 0) else None
 
+                # Đối với khách hàng: che giấu provider và làm sạch mô tả chống lộ giá vốn / NCC
+                provider_display = r.provider if is_admin else "MintForge AI Cluster"
+                desc = r.description or ""
+                if not is_admin:
+                    import re
+                    desc = re.sub(r'Xompet(\s+AI\s+Gateway)?', 'MintForge AI', desc, flags=re.IGNORECASE)
+                    desc = re.sub(r'chi phí vốn chỉ \d+đ\s*/\s*request\.?', 'tối ưu chi phí.', desc, flags=re.IGNORECASE)
+
                 items.append(
                     ModelPricingItem(
                         model=r.model,
                         display_name=r.display_name,
-                        provider=r.provider,
+                        provider=provider_display,
                         base_price=r.base_price,
                         provider_cost=prov_cost,
                         token_rate=r.token_rate,
@@ -103,7 +216,7 @@ class PricingService:
                         cache_cost=r.cache_cost,
                         resolutions=resolutions,
                         qualities=qualities,
-                        description=r.description or ""
+                        description=desc
                     )
                 )
             if items:
@@ -114,12 +227,13 @@ class PricingService:
             prov_cost = s["provider_cost"] if is_admin else None
             profit_amt = (s["base_price"] - s["provider_cost"]) if is_admin else None
             profit_margin = round(((s["base_price"] - s["provider_cost"]) / s["base_price"] * 100), 1) if (is_admin and s["base_price"] > 0) else None
+            provider_display = s["provider"] if is_admin else "MintForge AI Cluster"
 
             items.append(
                 ModelPricingItem(
                     model=s["model"],
                     display_name=s["display_name"],
-                    provider=s["provider"],
+                    provider=provider_display,
                     base_price=s["base_price"],
                     provider_cost=prov_cost,
                     token_rate=s["token_rate"],
@@ -141,21 +255,39 @@ class PricingService:
     def get_model_financials(self, db: Optional[Session], model_name: str) -> Tuple[float, float, int]:
         """
         Trả về (provider_cost, base_price, token_rate) cho một model.
-        Mặc định nếu không tìm thấy: vốn 120đ, bán 150đ, 1024 tokens.
+        Mặc định NCC mới (Xompet): vốn 75đ, bán 150đ, 1650 tokens.
         """
+        clean_name = (model_name or "gpt-image-2.5-flare").strip().lower()
+        if "flare" in clean_name or clean_name in ("gpt-image-2.5", "gpt-image-2-5"):
+            target_model = "gpt-image-2.5-flare"
+        elif "sunburst" in clean_name:
+            target_model = "gpt-image-2.5-sunburst"
+        elif "nanobanana" in clean_name or "nanobana" in clean_name:
+            target_model = "nanobanana-2"
+        elif "dall-e-2" in clean_name or "dalle-2" in clean_name or "dalle2" in clean_name:
+            target_model = "gpt-image-2"
+        elif "dall-e" in clean_name or "dalle" in clean_name:
+            target_model = "gpt-image-2.5-flare"
+        elif "gpt-image-2" in clean_name:
+            target_model = "gpt-image-2"
+        else:
+            target_model = clean_name
+
         if db:
             try:
-                record = db.query(ModelPricing).filter(ModelPricing.model == model_name).first()
+                record = db.query(ModelPricing).filter(
+                    (ModelPricing.model == target_model) | (ModelPricing.model == clean_name)
+                ).first()
                 if record:
                     return (record.provider_cost, record.base_price, record.token_rate)
             except Exception:
                 pass
         
         for s in DEFAULT_SEEDS:
-            if s["model"] == model_name:
+            if s["model"] == target_model or s["model"] == clean_name:
                 return (s["provider_cost"], s["base_price"], s["token_rate"])
         
-        return (120.0, 150.0, 1024)
+        return (75.0, 150.0, 1650)
 
     def create_pricing(self, db: Session, req: CreateModelPricingRequest) -> ModelPricingItem:
         self.ensure_seeded(db)

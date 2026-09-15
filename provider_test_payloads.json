@@ -1,0 +1,151 @@
+{
+  "info": {
+    "name": "NCC Upstream Provider (Leeh AI / 4uAI)",
+    "_postman_id": "c7a84e20-9118-4bfa-a90c-99c01f653421",
+    "description": "Bộ sưu tập Postman Collection đầy đủ để test trực tiếp Nhà Cung Cấp (Upstream api.leeh.dev) và Gateway hệ thống. Đã cấu hình sẵn URL, Bearer Token và Body chuẩn.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "upstream_url",
+      "value": "https://api.leeh.dev",
+      "type": "string"
+    },
+    {
+      "key": "upstream_key",
+      "value": "sk-5BZ6LD4DPV5BW75GFNVL4BBOMOHKXDOK37LLQROO7NNVXXSXQ55A====",
+      "type": "string"
+    },
+    {
+      "key": "gateway_url",
+      "value": "https://api-gpt-images.nexoratech.com.vn/api/v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Test Trực Tiếp NCC - Tạo Ảnh từ Chữ (Text-to-Image)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{upstream_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prompt\": \"A cute little kitten playing with a ball in a sunlit living room, 8k cinematic photorealistic\",\n  \"model\": \"gpt-image-2\",\n  \"modelKey\": \"gpt-image-2\",\n  \"mode\": \"generation\",\n  \"aspectRatio\": \"1024x1024\",\n  \"resolution\": \"1k\",\n  \"quality\": \"medium\",\n  \"count\": 1\n}"
+        },
+        "url": {
+          "raw": "{{upstream_url}}/v1/images/generations",
+          "host": [
+            "{{upstream_url}}"
+          ],
+          "path": [
+            "v1",
+            "images",
+            "generations"
+          ]
+        },
+        "description": "Gửi yêu cầu tạo ảnh từ chữ trực tiếp lên cụm GPU của Nhà Cung Cấp."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Test Trực Tiếp NCC - Tạo Ảnh Có Ảnh Mẫu (Image-to-Image)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{upstream_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prompt\": \"Thêm mặt trời vào ảnh\",\n  \"model\": \"gpt-image-2\",\n  \"modelKey\": \"gpt-image-2\",\n  \"mode\": \"edit\",\n  \"sourceImages\": [\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=\"],\n  \"executionMode\": \"sync\",\n  \"aspectRatio\": \"1024x1024\",\n  \"count\": 1\n}"
+        },
+        "url": {
+          "raw": "{{upstream_url}}/v1/images/generations",
+          "host": [
+            "{{upstream_url}}"
+          ],
+          "path": [
+            "v1",
+            "images",
+            "generations"
+          ]
+        },
+        "description": "Gửi yêu cầu tạo ảnh biến thể theo ảnh mẫu (Image-to-Image) trực tiếp tới NCC."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Kiểm Tra Danh Sách Model NCC (/v1/models)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{upstream_key}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{upstream_url}}/v1/models",
+          "host": [
+            "{{upstream_url}}"
+          ],
+          "path": [
+            "v1",
+            "models"
+          ]
+        },
+        "description": "Lấy danh sách các model AI đang hoạt động trên hệ thống NCC."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Test Qua Gateway Hệ Thống (api-gpt-images.nexoratech.com.vn)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prompt\": \"Thêm con mèo nằm kế bên không thay đổi khung cảnh\",\n  \"model\": \"gpt-image-2\",\n  \"aspect_ratio\": \"1:1\",\n  \"resolution\": \"1k\",\n  \"quality\": \"medium\",\n  \"count\": 1,\n  \"force_refresh\": true,\n  \"reference\": \"https://api-gpt-images.nexoratech.com.vn/static/uploads/references/opt_puppy_1024.jpg\"\n}"
+        },
+        "url": {
+          "raw": "{{gateway_url}}/images/generations",
+          "host": [
+            "{{gateway_url}}"
+          ],
+          "path": [
+            "images",
+            "generations"
+          ]
+        },
+        "description": "Test gọi qua Gateway chính của chúng ta (có auto-translate tiếng Việt sang tiếng Anh và tự động nén Base64)."
+      },
+      "response": []
+    }
+  ]
+}

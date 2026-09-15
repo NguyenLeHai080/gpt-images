@@ -51,7 +51,7 @@ export const PricingPage: React.FC = () => {
   const [monthlyImages, setMonthlyImages] = useState(3000);
   const [cacheHitRate, setCacheHitRate] = useState(35);
   const [resolution, setResolution] = useState('2k');
-  const [quality, setQuality] = useState('high');
+  const [quality, setQuality] = useState('medium');
   const [simulation, setSimulation] = useState<PricingSimulatorResponse | null>(null);
 
   const loadPricing = useCallback(async () => {
@@ -137,11 +137,11 @@ export const PricingPage: React.FC = () => {
       ? Math.round(
           pricingList.reduce((acc, p) => acc + (p.profit_margin_pct ?? 0), 0) / pricingList.length
         )
-      : 20;
+      : 50;
 
   // Simulator Financials for Admin
   const simCustomerRevenue = simulation?.estimated_monthly_cost ?? 0;
-  const simProvCostUnit = gpt2Item?.provider_cost ?? 120;
+  const simProvCostUnit = gpt2Item?.provider_cost ?? 75;
   const simCacheHits = Math.round((monthlyImages * Math.min(80, cacheHitRate)) / 100);
   const simCacheMisses = Math.max(0, monthlyImages - simCacheHits);
   const simEstProviderCost = simCacheMisses * simProvCostUnit;
@@ -367,10 +367,10 @@ export const PricingPage: React.FC = () => {
             </div>
             <div>
               <span className="text-[11px] font-semibold text-slate-400 block">
-                Giá vốn máy chủ (AI Engine)
+                Giá vốn nhà cung cấp (Xompet)
               </span>
               <span className="text-lg font-black text-slate-900 font-mono">
-                {formatVND(gpt2Item?.provider_cost ?? 120)}
+                {formatVND(gpt2Item?.provider_cost ?? 75)}
               </span>
             </div>
           </div>

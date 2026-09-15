@@ -8,6 +8,8 @@ from app.modules.dashboard.models import ApiActivityLog
 from app.modules.generations.models import ImageGenerationJob, ProviderAccount
 from app.modules.pricing.models import ModelPricing
 from app.modules.pricing.services import pricing_service
+from app.modules.providers.models import AIProvider
+from app.modules.providers.services import providers_service
 
 def init_database() -> None:
     """
@@ -91,190 +93,62 @@ def init_database() -> None:
             admin_user = db.query(User).first()
         print("[PostgreSQL] Seeded system users with multiple roles.")
 
-        # 2. Seed 28 API Keys
+        # 2. Seed Clean Master API Key if none exists
         total_keys = db.query(ApiKey).count()
-        if total_keys == 0:
-            for i in range(1, 29):
-                key_prefix = f"mf_live_sec_{i:02d}..."
-                api_key = ApiKey(
-                    id=f"key_{i:02d}",
-                    user_id=admin_user.id,
-                    name=f"Production AI Key #{i:02d}" if i <= 10 else f"Worker Key #{i:02d}",
-                    key_prefix=key_prefix,
-                    hashed_key=get_password_hash(f"secret_key_value_{i}"),
-                    rate_limit="120 req/min" if i <= 5 else "60 req/min",
-                    status="active",
-                    last_used_at="Vừa xong" if i <= 3 else f"{i * 2} phút trước",
-                )
-                db.add(api_key)
-            db.commit()
-            print("[PostgreSQL] Seeded 28 API Keys successfully.")
-
-        # 3. Seed Wallet & Transactions
-        wallet = db.query(Wallet).filter(Wallet.user_id == admin_user.id).first()
-        if not wallet:
-            wallet = Wallet(
-                id="wallet_admin_01",
+        if total_keys == 0 and admin_user:
+            api_key = ApiKey(
+                id="key_master_admin",
                 user_id=admin_user.id,
-                balance=0.0,
-                total_deposited=0.0,
-                api_spent=0.0,
-                currency="VND",
+                name="API Key Chính (Production Cổng Khách)",
+                key_prefix="mf_live_sec_master...",
+                hashed_key=get_password_hash("secret_key_master_admin"),
+                rate_limit="120 req/min",
+                status="active",
+                last_used_at="Vừa xong",
             )
-            db.add(wallet)
+            db.add(api_key)
             db.commit()
+            print("[PostgreSQL] Seeded clean Master API Key.")
 
-            txs = [
-                Transaction(
-                    id="TX-89214",
-                    wallet_id=wallet.id,
-                    amount=2000000.0,
-                    gateway="SePay VietQR",
-                    status="success",
-                    description="Nạp số dư tài khoản API gói Doanh nghiệp",
-                    created_at=datetime(2026, 9, 12, 14, 15),
-                ),
-                Transaction(
-                    id="TX-89190",
-                    wallet_id=wallet.id,
-                    amount=1500000.0,
-                    gateway="VietinBank QR",
-                    status="success",
-                    description="Thanh toán nạp tiền tự động",
-                    created_at=datetime(2026, 9, 10, 9, 30),
-                ),
-                Transaction(
-                    id="TX-88942",
-                    wallet_id=wallet.id,
-                    amount=831500.0,
-                    gateway="SePay Auto",
-                    status="success",
-                    description="Nạp tín dụng xử lý model gpt-image-2",
-                    created_at=datetime(2026, 9, 8, 16, 45),
-                ),
-            ]
-            db.add_all(txs)
-            db.commit()
-            print("[PostgreSQL] Seeded enterprise wallet and transactions.")
-
-        # 4. Seed Image Generation Jobs
-        job_count = db.query(ImageGenerationJob).count()
-        if job_count == 0:
-            sample_jobs = [
-                ImageGenerationJob(
-                    id="job_9981a82f",
-                    user_id=admin_user.id,
-                    api_key_id="key_01",
-                    prompt="Một chú chó Shiba Inu đang đeo kính đọc sách trong thư viện cổ điển ánh sáng ấm",
-                    model="gpt-image-2",
-                    aspect_ratio="1024x1024",
-                    count=1,
-                    status="SUCCEEDED",
-                    provider_task_id="cmtwv0sz9002vmlxpqpg5cifq",
-                    provider_generation_id="cmtwv0sz9002vmlxpqpg5cifq",
-                    image_url="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=1024&q=80",
-                    latency_ms=4820,
-                    cost_provider=120.0,
-                    charged_customer=150.0,
-                    profit=30.0,
-                    created_at=datetime(2026, 9, 13, 11, 30)
-                ),
-                ImageGenerationJob(
-                    id="job_8812bc3d",
-                    user_id=admin_user.id,
-                    api_key_id="key_01",
-                    prompt="Thành phố tương lai Cyberpunk với xe bay và ánh đèn neon phản chiếu mặt đường ướt",
-                    model="gpt-image-2",
-                    aspect_ratio="16:9",
-                    count=1,
-                    status="SUCCEEDED",
-                    provider_task_id="cmtwu129381kaxpqpg990a",
-                    provider_generation_id="cmtwu129381kaxpqpg990a",
-                    image_url="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1024&q=80",
-                    latency_ms=5210,
-                    cost_provider=120.0,
-                    charged_customer=150.0,
-                    profit=30.0,
-                    created_at=datetime(2026, 9, 13, 10, 15)
-                ),
-                ImageGenerationJob(
-                    id="job_7721df9a",
-                    user_id=admin_user.id,
-                    api_key_id="key_02",
-                    prompt="Logo biểu tượng năng lượng mặt trời tối giản phong cách vector 3D glassmorphism",
-                    model="gpt-image-2",
-                    aspect_ratio="1024x1024",
-                    count=1,
-                    status="SUCCEEDED",
-                    provider_task_id="cmtwt891029zmlxpqpg88bb",
-                    provider_generation_id="cmtwt891029zmlxpqpg88bb",
-                    image_url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=80",
-                    latency_ms=3940,
-                    cost_provider=120.0,
-                    charged_customer=150.0,
-                    profit=30.0,
-                    created_at=datetime(2026, 9, 13, 9, 40)
-                ),
-                ImageGenerationJob(
-                    id="job_6632ee10",
-                    user_id=admin_user.id,
-                    api_key_id="key_03",
-                    prompt="Bức tranh sơn dầu phong cảnh núi Phú Sĩ mùa thu lá đỏ soi bóng hồ nước",
-                    model="gpt-image-2",
-                    aspect_ratio="16:9",
-                    count=1,
-                    status="SUCCEEDED",
-                    provider_task_id="cmtws781920zmlxpqpg77cc",
-                    provider_generation_id="cmtws781920zmlxpqpg77cc",
-                    image_url="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1024&q=80",
-                    latency_ms=6120,
-                    cost_provider=120.0,
-                    charged_customer=150.0,
-                    profit=30.0,
-                    created_at=datetime(2026, 9, 13, 8, 10)
-                ),
-                ImageGenerationJob(
-                    id="job_5541ff22",
-                    user_id=admin_user.id,
-                    api_key_id="key_02",
-                    prompt="Prompt thử nghiệm vượt ngưỡng ký tự [Test error handling]",
-                    model="gpt-image-2",
-                    aspect_ratio="1024x1024",
-                    count=1,
-                    status="FAILED",
-                    error_message="Invalid request format from upstream provider (rate_limit_exceeded)",
-                    error_code="PROVIDER_ERR_429",
-                    latency_ms=850,
-                    cost_provider=0.0,
-                    charged_customer=0.0,
-                    profit=0.0,
-                    created_at=datetime(2026, 9, 13, 7, 0)
+        # 3. Seed Wallets for Users
+        for u in db.query(User).all():
+            w = db.query(Wallet).filter(Wallet.user_id == u.id).first()
+            if not w:
+                w = Wallet(
+                    id=f"wallet_{u.id}",
+                    user_id=u.id,
+                    balance=0.0,
+                    total_deposited=0.0,
+                    api_spent=0.0,
+                    currency="VND",
                 )
-            ]
-            db.add_all(sample_jobs)
-            db.commit()
-            print("[PostgreSQL] Seeded initial image generation jobs.")
+                db.add(w)
+        db.commit()
+        print("[PostgreSQL] Initialized clean user wallets with 0 VND.")
 
         # 5. Seed Provider Config
         provider_acc = db.query(ProviderAccount).filter(ProviderAccount.id == "provider_default").first()
         if not provider_acc:
             provider_acc = ProviderAccount(
                 id="provider_default",
-                provider_name="Nexora AI Cluster Engine",
-                base_url="https://cluster.internal",
-                username="cluster-worker-01",
+                provider_name="Xompet AI Gateway",
+                base_url="https://api.xompet.io.vn/v1",
+                username="xompet-cluster-01",
                 password="••••••••••••",
-                wallet_balance=24702.0,
+                wallet_balance=500000.0,
                 currency="VND",
                 is_active=True
             )
             db.add(provider_acc)
             db.commit()
-            print("[PostgreSQL] Seeded upstream provider account configuration.")
+            print("[PostgreSQL] Seeded upstream provider account configuration (Xompet).")
 
         # 6. Seed Model Pricing Rate Cards
         pricing_service.ensure_seeded(db)
         print("[PostgreSQL] Seeded model pricing rate cards (gpt-image-2, dall-e-3, etc.).")
+
+        # 7. Seed AI Providers Registry (Xompet, OpenAI)
+        providers_service.ensure_seeded(db)
 
     except Exception as e:
         db.rollback()

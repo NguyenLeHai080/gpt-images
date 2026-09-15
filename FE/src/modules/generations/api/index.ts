@@ -58,7 +58,7 @@ export const generationsApi = {
   generateImage: async (payload: GenerateImagePayload) => {
     return await apiClient.post<GenerateImageResult>('/images/generations', payload, {
       showErrorAlert: true,
-      successToast: 'Đã tạo ảnh thành công từ model gpt-image-2!',
+      successToast: 'Đã tạo ảnh thành công!',
     });
   },
 

@@ -6,6 +6,9 @@ class WalletSummary(BaseModel):
     total_deposited: str = "0 đ"
     api_spent: str = "0 đ"
     currency: str = "VND"
+    balance: float = 0.0
+    available_images: int = 0
+    is_exhausted: bool = False
 
 class TransactionItem(BaseModel):
     id: str
@@ -77,3 +80,32 @@ class CreditConfigItem(BaseModel):
     bonus_tier_2_pct: float = 10.0
     auto_reconcile_sepay: bool = True
     allow_negative_balance: bool = False
+
+class ProviderBudgetLogItem(BaseModel):
+    id: str
+    amount: float
+    budget_before: float
+    budget_after: float
+    note: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: str
+
+class TopupProviderBudgetRequest(BaseModel):
+    amount: float
+    note: Optional[str] = "Nạp ngân sách qua Web Admin"
+
+class ProviderBudgetOverview(BaseModel):
+    provider_name: str
+    key_masked: str
+    status: str
+    status_text: str
+    is_active: bool
+    budget_total: float
+    budget_used: float
+    budget_remaining: float
+    used_percent: float
+    available_images_estimate: int
+    models_rates: Optional[List[Any]] = None
+    last_synced_at: str
+    recent_topups: List[ProviderBudgetLogItem] = []
+

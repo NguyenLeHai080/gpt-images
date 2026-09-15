@@ -2,6 +2,9 @@ export interface WalletData {
   balance_amount: string;
   total_deposited: string;
   api_spent: string;
+  balance?: number;
+  available_images?: number;
+  is_exhausted?: boolean;
 }
 
 export interface TransactionItem {
@@ -57,3 +60,40 @@ export interface CreditConfigItem {
   auto_reconcile_sepay: boolean;
   allow_negative_balance: boolean;
 }
+
+export interface ProviderBudgetLogItem {
+  id: string;
+  amount: number;
+  budget_before: number;
+  budget_after: number;
+  note?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface ProviderBudgetOverview {
+  provider_name: string;
+  key_masked: string;
+  status: string;
+  status_text: string;
+  is_active: boolean;
+  budget_total: number;
+  budget_used: number;
+  budget_remaining: number;
+  used_percent: number;
+  available_images_estimate: number;
+  models_rates?: Array<{
+    model: string;
+    display_name: string;
+    cost_per_req: number;
+    unit: string;
+  }>;
+  last_synced_at: string;
+  recent_topups: ProviderBudgetLogItem[];
+}
+
+export interface TopupProviderBudgetPayload {
+  amount: number;
+  note?: string;
+}
+

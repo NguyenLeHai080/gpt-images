@@ -10,9 +10,13 @@ class ApiKeyItem(BaseModel):
     last_used: Optional[str] = None
     rate_limit: str = "60 req/min"
     user_id: Optional[str] = None
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    user_role: Optional[str] = None
     raw_key: Optional[str] = None
 
 class CreateApiKeyRequest(BaseModel):
     name: str
     rate_limit: Optional[str] = "60 req/min"
+    user_id: Optional[str] = None
 

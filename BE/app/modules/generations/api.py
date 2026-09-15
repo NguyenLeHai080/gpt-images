@@ -2,59 +2,70 @@ import base64
 import os
 import uuid
 import re
-from fastapi import APIRouter, Depends, Request, Query, HTTPException, UploadFile, File
-from fastapi.responses import Response, RedirectResponse
+import time
+from fastapi import APIRouter, Depends, Request, Query, HTTPException, UploadFile, File, Form
+from fastapi.responses import Response, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.responses import success_response, error_response
 from app.core.security import decode_access_token
 from app.modules.auth.models import User
+from app.modules.billing.models import Wallet
 from app.modules.api_keys.models import ApiKey
 from app.modules.api_keys.services import hash_api_token
-from app.modules.generations.schemas import ImageGenerationRequest, UpdateJobRequest, BatchJobActionRequest
+from app.modules.generations.schemas import ImageGenerationRequest, UpdateJobRequest, BatchJobActionRequest, UpdateMaintenanceRequest
 from app.modules.generations.services import generation_service
 
 router = APIRouter(prefix="", tags=["Image Generation Gateway"])
 
 def resolve_user_and_key(request: Request, db: Session):
     """
-    Xác thực request qua Customer API Key hoặc JWT Token
+    Xác thực request qua Customer API Key hoặc JWT Token.
+    Khách chỉ dùng API key được cấp (mf_live_sec_...) hoặc phiên đăng nhập.
+    Tuyệt đối không fallback sang admin để ngăn chặn việc gọi API không khóa.
     """
-    auth_header = request.headers.get("Authorization", "")
-    x_api_key = request.headers.get("x-api-key", "")
+    auth_header = request.headers.get("Authorization", "").strip()
+    x_api_key = request.headers.get("x-api-key", "").strip()
     token_str = ""
 
     if x_api_key:
         token_str = x_api_key
     elif auth_header.startswith("Bearer "):
-        token_str = auth_header.split(" ")[1]
+        token_str = auth_header.split(" ", 1)[1].strip()
 
-    # 1. Thử xác thực với JWT Token
-    if token_str:
-        jwt_payload = decode_access_token(token_str)
-        if jwt_payload and "sub" in jwt_payload:
-            user = db.query(User).filter(User.email == jwt_payload["sub"]).first()
-            if user:
-                return user, None
+    if not token_str:
+        return None, None
+
+    # 1. Thử xác thực với JWT Token (Người dùng đăng nhập trên giao diện web)
+    jwt_payload = decode_access_token(token_str)
+    if jwt_payload and "sub" in jwt_payload:
+        user = db.query(User).filter(User.email == jwt_payload["sub"]).first()
+        if user and user.is_active:
+            return user, None
 
     # 2. Thử xác thực với Customer API Key (băm SHA-256 hoặc ID khóa)
-    if token_str:
-        token_hash = hash_api_token(token_str)
-        api_key = db.query(ApiKey).filter(
-            (ApiKey.hashed_key == token_hash) |
-            (ApiKey.id == token_str)
-        ).first()
-        if api_key:
-            user = db.query(User).filter(User.id == api_key.user_id).first() if api_key.user_id else None
-            if not user:
-                user = db.query(User).first()
-            return user, api_key
+    token_hash = hash_api_token(token_str)
+    api_key = db.query(ApiKey).filter(
+        (ApiKey.hashed_key == token_hash) |
+        (ApiKey.id == token_str)
+    ).first()
+    if api_key:
+        status_clean = (api_key.status or "").upper()
+        if status_clean != "ACTIVE":
+            raise HTTPException(
+                status_code=401,
+                detail=f"API Key '{api_key.name}' ({api_key.key_prefix}) đã hết hạn hoặc bị tạm khóa (Trạng thái: {api_key.status}). Vui lòng tạo khóa mới hoặc kích hoạt lại tại Cổng Khách Hàng."
+            )
+        user = db.query(User).filter(User.id == api_key.user_id).first() if api_key.user_id else None
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=401,
+                detail="Tài khoản liên kết với API Key này đã bị tạm khóa hoặc không tồn tại."
+            )
+        return user, api_key
 
-
-    # 3. Fallback to default admin for convenience in demo mode
-    default_user = db.query(User).first()
-    return default_user, None
+    return None, None
 
 @router.post("/images/generations")
 @router.post("/v1/images/generations")
@@ -64,14 +75,31 @@ def generate_image(
     db: Session = Depends(get_db)
 ):
     """
-    [CỔNG API KHÁCH HÀNG] Tạo hình ảnh AI thế hệ mới (Model gpt-image-2)
-    - Giá bán: 150 đ / ảnh
-    - Giá vốn NCC: 120 đ / ảnh
-    - Lợi nhuận gộp: 30 đ / ảnh
+    [CỔNG API KHÁCH HÀNG] Tạo và chỉnh sửa hình ảnh AI thế hệ mới (OpenAI-compatible)
+    - Models hỗ trợ: gpt-image-2.5-flare (mặc định), gpt-image-2.5-sunburst, gpt-image-2, nanobanana-2, gemini-3.1-flash-image-preview
+    - Điểm ảnh thực: 1024x1024, 1792x1024, 1024x1792, 1024x768, 768x1024, 2048x2048
+    - Giá niêm yết: 150 đ / ảnh thành công (Lỗi = 0 đ, hoàn tiền 100%)
+    - Miễn phí 100% ảnh tham chiếu (Image-to-Image / Edits)
     """
     user, api_key = resolve_user_and_key(request, db)
     if not user:
-        return error_response("UNAUTHORIZED", "Khóa API hoặc phiên đăng nhập không hợp lệ", status_code=401)
+        is_openai_sdk = (
+            request.url.path.startswith("/v1/") or 
+            "openai" in request.headers.get("user-agent", "").lower()
+        )
+        if is_openai_sdk:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": {
+                        "message": "Incorrect API key provided. You must provide a valid API key (e.g. mf_live_sec_...) in the Authorization header.",
+                        "type": "invalid_request_error",
+                        "param": None,
+                        "code": "invalid_api_key"
+                    }
+                }
+            )
+        return error_response("UNAUTHORIZED", "Khóa API không hợp lệ hoặc thiếu. Vui lòng cung cấp khóa API trong header Authorization hoặc x-api-key.", status_code=401)
 
     result = generation_service.process_generation(
         db=db,
@@ -79,7 +107,284 @@ def generate_image(
         user=user,
         api_key=api_key
     )
-    return success_response(result.model_dump(), "Tạo hình ảnh thành công", status_code=201)
+
+    # Đảm bảo đường dẫn ảnh tuyệt đối cho external API callers
+    if result.image_url and result.image_url.startswith("/"):
+        base = str(request.base_url).rstrip("/")
+        if not ("127.0.0.1" in base or "localhost" in base):
+            base = getattr(settings, "PUBLIC_API_URL", base).rstrip("/")
+        full_image_url = f"{base}{result.image_url}"
+        result.image_url = full_image_url
+        if result.data and len(result.data) > 0:
+            result.data[0]["url"] = full_image_url
+
+    # Lấy số dư ví còn lại sau khi trừ tiền để gửi header cảnh báo
+    user_wallet = db.query(Wallet).filter(Wallet.user_id == user.id).first()
+    remaining_balance = user_wallet.balance if user_wallet else 0.0
+    remaining_images = max(0, int(remaining_balance // 150))
+    resp_headers = {
+        "x-wallet-balance": f"{remaining_balance:,.0f} VND",
+        "x-images-remaining": str(remaining_images),
+    }
+    if remaining_balance < 1000:
+        resp_headers["x-warning"] = f"Low balance: only {remaining_images} images remaining ({remaining_balance:,.0f} VND). Please top up."
+
+    # Hỗ trợ định dạng OpenAI SDK thuần túy khi client gọi qua /v1/ hoặc gửi OpenAI User-Agent
+    is_openai_sdk = (
+        request.url.path == "/v1/images/generations" or 
+        "openai" in request.headers.get("user-agent", "").lower()
+    ) and not ("localhost:517" in request.headers.get("referer", "") or "127.0.0.1:517" in request.headers.get("referer", ""))
+
+    if is_openai_sdk:
+        return JSONResponse(
+            status_code=200,
+            headers=resp_headers,
+            content={
+                "created": result.created or int(time.time()),
+                "data": [
+                    {
+                        "url": result.image_url,
+                        "revised_prompt": result.prompt
+                    }
+                ]
+            }
+        )
+
+    return JSONResponse(
+        status_code=201,
+        headers=resp_headers,
+        content={
+            "success": True,
+            "code": "SUCCESS",
+            "message": "Tạo hình ảnh thành công",
+            "data": result.model_dump(),
+            "meta": {
+                "wallet_balance": remaining_balance,
+                "images_remaining": remaining_images,
+                "low_balance_warning": remaining_balance < 1000
+            }
+        }
+    )
+
+@router.post("/images/edits")
+@router.post("/v1/images/edits")
+async def edit_image(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    [CHUẨN OPENAI EDITS] Chỉnh sửa hình ảnh theo ảnh mẫu (Image-to-Image)
+    Tương thích với openai.images.edit() qua cả multipart/form-data và JSON payload.
+    Hỗ trợ tự động tải file tham chiếu lên và xử lý qua Cụm AI Image Gateway.
+    """
+    user, api_key = resolve_user_and_key(request, db)
+    if not user:
+        is_openai_sdk = (
+            request.url.path.startswith("/v1/") or 
+            "openai" in request.headers.get("user-agent", "").lower()
+        )
+        if is_openai_sdk:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": {
+                        "message": "Incorrect API key provided. You must provide a valid API key (e.g. mf_live_sec_...) in the Authorization header.",
+                        "type": "invalid_request_error",
+                        "param": None,
+                        "code": "invalid_api_key"
+                    }
+                }
+            )
+        return error_response("UNAUTHORIZED", "Khóa API không hợp lệ hoặc thiếu. Vui lòng cung cấp khóa API trong header Authorization hoặc x-api-key.", status_code=401)
+
+    content_type = request.headers.get("content-type", "").lower()
+    prompt = ""
+    model = "gpt-image-2.5-flare"
+    size = "1024x1024"
+    count = 1
+    ref_image_path = None
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        prompt = str(form.get("prompt") or "").strip()
+        model = str(form.get("model") or "gpt-image-2.5-flare").strip()
+        size = str(form.get("size") or "1024x1024").strip()
+        resolution = str(form.get("resolution") or "1k").strip()
+        quality = str(form.get("quality") or "medium").strip()
+        try:
+            count = int(form.get("n", 1))
+        except Exception:
+            count = 1
+
+        img_field = form.get("image")
+        if img_field and hasattr(img_field, "read"):
+            upload_dir = settings.REFERENCES_UPLOAD_DIR
+            os.makedirs(upload_dir, exist_ok=True)
+            fname = getattr(img_field, "filename", "edit_input.png") or "edit_input.png"
+            ext = os.path.splitext(fname)[1].lower() or ".png"
+            unique_name = f"edit_{uuid.uuid4().hex[:12]}{ext}"
+            ref_image_path = os.path.join(upload_dir, unique_name)
+            file_bytes = await img_field.read()
+            with open(ref_image_path, "wb") as f_out:
+                f_out.write(file_bytes)
+        elif isinstance(img_field, str) and img_field.strip():
+            ref_image_path = img_field.strip()
+    else:
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        prompt = str(body.get("prompt") or "").strip()
+        model = str(body.get("model") or "gpt-image-2.5-flare").strip()
+        size = str(body.get("size") or body.get("aspect_ratio") or "1024x1024").strip()
+        resolution = str(body.get("resolution") or "1k").strip()
+        quality = str(body.get("quality") or "medium").strip()
+        try:
+            count = int(body.get("n") or body.get("count") or 1)
+        except Exception:
+            count = 1
+        ref_image_path = body.get("image") or body.get("reference")
+
+    if not prompt:
+        return error_response("VALIDATION_ERROR", "Thiếu trường 'prompt' mô tả nội dung chỉnh sửa", status_code=422)
+
+    gen_payload = ImageGenerationRequest(
+        prompt=prompt,
+        model=model,
+        reference=ref_image_path,
+        size=size,
+        resolution=resolution,
+        quality=quality,
+        count=count,
+        mode="edit"
+    )
+
+    result = generation_service.process_generation(
+        db=db,
+        request=gen_payload,
+        user=user,
+        api_key=api_key
+    )
+
+    if result.image_url and result.image_url.startswith("/"):
+        base = str(request.base_url).rstrip("/")
+        if not ("127.0.0.1" in base or "localhost" in base):
+            base = getattr(settings, "PUBLIC_API_URL", base).rstrip("/")
+        full_image_url = f"{base}{result.image_url}"
+        result.image_url = full_image_url
+        if result.data and len(result.data) > 0:
+            result.data[0]["url"] = full_image_url
+
+    is_openai_sdk = (
+        request.url.path == "/v1/images/edits" or 
+        "openai" in request.headers.get("user-agent", "").lower()
+    ) and not ("localhost:517" in request.headers.get("referer", "") or "127.0.0.1:517" in request.headers.get("referer", ""))
+
+    if is_openai_sdk:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "created": result.created or int(time.time()),
+                "data": [
+                    {
+                        "url": result.image_url,
+                        "revised_prompt": result.prompt
+                    }
+                ]
+            }
+        )
+
+    return success_response(result.model_dump(), "Chỉnh sửa hình ảnh thành công", status_code=201)
+
+@router.get("/models")
+@router.get("/v1/models")
+def list_models(request: Request):
+    """
+    [CHUẨN OPENAI] Liệt kê các mô hình AI sinh ảnh khả dụng
+    Tương thích chuẩn openai.models.list() và các công cụ client AI
+    """
+    return {
+        "object": "list",
+        "data": [
+            {
+                "id": "gpt-image-2.5-flare",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "mintforge",
+                "permission": [],
+                "root": "gpt-image-2.5-flare",
+                "parent": None
+            },
+            {
+                "id": "gpt-image-2.5-sunburst",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "mintforge",
+                "permission": [],
+                "root": "gpt-image-2.5-sunburst",
+                "parent": None
+            },
+            {
+                "id": "gpt-image-2",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "mintforge",
+                "permission": [],
+                "root": "gpt-image-2",
+                "parent": None
+            },
+            {
+                "id": "nanobanana-2",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "mintforge",
+                "permission": [],
+                "root": "nanobanana-2",
+                "parent": None
+            },
+            {
+                "id": "gemini-3.1-flash-image-preview",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "mintforge",
+                "permission": [],
+                "root": "gemini-3.1-flash-image-preview",
+                "parent": None
+            },
+            {
+                "id": "dall-e-3",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "system-alias",
+                "permission": [],
+                "root": "gpt-image-2.5-flare",
+                "parent": None
+            },
+            {
+                "id": "dall-e-2",
+                "object": "model",
+                "created": 1710000000,
+                "owned_by": "system-alias",
+                "permission": [],
+                "root": "gpt-image-2",
+                "parent": None
+            }
+        ]
+    }
+
+@router.get("/models/{model_id}")
+@router.get("/v1/models/{model_id}")
+def retrieve_model(model_id: str):
+    """[CHUẨN OPENAI] Tra cứu chi tiết một mô hình"""
+    return {
+        "id": model_id,
+        "object": "model",
+        "created": 1710000000,
+        "owned_by": "mintforge",
+        "permission": [],
+        "root": model_id,
+        "parent": None
+    }
 
 @router.get("/generations/jobs")
 def get_jobs(
@@ -127,7 +432,7 @@ def get_financial_summary(
     db: Session = Depends(get_db)
 ):
     """
-    [ADMIN] Thống kê dòng tiền, doanh thu bán ra 150đ, vốn NCC 120đ và lợi nhuận gộp
+    [ADMIN] Thống kê dòng tiền, doanh thu bán ra 150đ, vốn NCC 75đ và lợi nhuận gộp 75đ (50%)
     """
     user, _ = resolve_user_and_key(request, db)
     if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
@@ -162,6 +467,34 @@ def sync_provider(
         return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền đồng bộ nhà cung cấp", status_code=403)
     data = generation_service.get_provider_status(force_refresh=True)
     return success_response(data.model_dump(), "Đồng bộ thành công số dư từ AI Cluster Engine")
+
+@router.get("/system/maintenance")
+def get_system_maintenance(db: Session = Depends(get_db)):
+    """
+    [PUBLIC] Lấy trạng thái chế độ bảo trì API (Dành cho Web và API client kiểm tra)
+    """
+    from app.modules.dashboard.services import dashboard_service
+    res = dashboard_service.get_maintenance_mode(db)
+    return success_response(res, "Lấy trạng thái bảo trì thành công")
+
+@router.post("/system/maintenance")
+def set_system_maintenance(
+    payload: UpdateMaintenanceRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    [SUPER ADMIN / ADMIN] Bật / Tắt chế độ bảo trì toàn hệ thống
+    """
+    user, _ = resolve_user_and_key(request, db)
+    if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
+        return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền thay đổi trạng thái bảo trì hệ thống", status_code=403)
+    
+    from app.modules.dashboard.services import dashboard_service
+    res = dashboard_service.set_maintenance_mode(db, enabled=payload.is_maintenance, message=payload.message, user=user)
+    action_text = "BẬT" if payload.is_maintenance else "TẮT"
+    return success_response(res, f"Đã {action_text} chế độ bảo trì API toàn hệ thống thành công!")
+
 
 UPLOAD_DIR = settings.REFERENCES_UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -272,31 +605,60 @@ def get_job_image(
 
     img_url = job.image_url.strip()
 
-    # Nếu là URL ngoại vi
+    # Nếu là file cục bộ (/static/uploads/...)
+    if img_url.startswith("/static/uploads/") or img_url.startswith("static/uploads/"):
+        rel_path = img_url.lstrip("/")
+        full_path = os.path.join(settings.UPLOAD_DIR, rel_path.replace("static/uploads/", ""))
+        if not os.path.exists(full_path):
+            full_path = os.path.join(settings.BASE_DIR, rel_path)
+        if os.path.exists(full_path):
+            with open(full_path, "rb") as f:
+                data = f.read()
+            ext = os.path.splitext(full_path)[1].lower()
+            content_type = "image/png" if ext == ".png" else ("image/webp" if ext == ".webp" else "image/jpeg")
+            return Response(
+                content=data,
+                media_type=content_type,
+                headers={
+                    "Cache-Control": "public, max-age=86400, immutable",
+                    "Content-Disposition": f'inline; filename="job-{job_id}{ext}"'
+                }
+            )
+
+    # Nếu là URL ngoại vi: tải server-side và stream nhị phân, tuyệt đối KHÔNG redirect 302
     if img_url.startswith("http://") or img_url.startswith("https://"):
-        # Nếu URL trỏ tới nhà cung cấp upstream -> proxy dữ liệu ảnh trực tiếp để tuyệt đối không lộ domain NCC
-        if "leeh.dev" in img_url or "internal" in img_url:
-            try:
-                import urllib.request
-                import ssl
-                ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-                req = urllib.request.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, context=ctx, timeout=15) as uresp:
-                    data = uresp.read()
-                    content_type = uresp.headers.get_content_type() or "image/png"
-                    return Response(
-                        content=data,
-                        media_type=content_type,
-                        headers={
-                            "Cache-Control": "public, max-age=86400, immutable",
-                            "Content-Disposition": f'inline; filename="job-{job_id}.png"'
-                        }
-                    )
-            except Exception:
-                pass
-        return RedirectResponse(url=img_url, status_code=302)
+        try:
+            import urllib.request
+            import ssl
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, context=ctx, timeout=20) as uresp:
+                data = uresp.read()
+                content_type = uresp.headers.get_content_type() or "image/png"
+                # Cache lại cục bộ trên server để lần sau không cần tải lại
+                try:
+                    gen_dir = os.path.join(settings.UPLOAD_DIR, "generated")
+                    os.makedirs(gen_dir, exist_ok=True)
+                    ext = ".png" if "png" in content_type else (".webp" if "webp" in content_type else ".jpg")
+                    saved_path = os.path.join(gen_dir, f"{job_id}{ext}")
+                    with open(saved_path, "wb") as f_out:
+                        f_out.write(data)
+                    job.image_url = f"/static/uploads/generated/{job_id}{ext}"
+                    db.commit()
+                except Exception:
+                    pass
+                return Response(
+                    content=data,
+                    media_type=content_type,
+                    headers={
+                        "Cache-Control": "public, max-age=86400, immutable",
+                        "Content-Disposition": f'inline; filename="job-{job_id}.png"'
+                    }
+                )
+        except Exception:
+            raise HTTPException(status_code=502, detail="Không thể tải dữ liệu hình ảnh. Vui lòng thử lại sau.")
 
     # Nếu là chuỗi data URI: data:image/...;base64,...
     if img_url.startswith("data:image/"):

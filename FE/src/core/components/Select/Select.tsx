@@ -12,8 +12,10 @@ export const Select: React.FC<SelectProps> = ({
   searchable = false,
   className = '',
   size = 'md',
+  placement = 'auto',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [search, setSearch] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -29,14 +31,36 @@ export const Select: React.FC<SelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Tính toán hướng mở (trên hay dưới) khi mở dropdown
+  useEffect(() => {
+    if (isOpen) {
+      if (placement === 'top') {
+        setOpenUpward(true);
+      } else if (placement === 'bottom') {
+        setOpenUpward(false);
+      } else if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const scrollParent =
+          wrapperRef.current.closest('.overflow-y-auto') ||
+          wrapperRef.current.closest('.overflow-auto');
+        let spaceBelow = window.innerHeight - rect.bottom;
+        if (scrollParent) {
+          const parentRect = scrollParent.getBoundingClientRect();
+          spaceBelow = parentRect.bottom - rect.bottom;
+        }
+        setOpenUpward(spaceBelow < 220);
+      }
+    }
+  }, [isOpen, placement]);
+
   const filteredOptions = searchable
     ? options.filter((opt) => opt.label.toLowerCase().includes(search.toLowerCase()))
     : options;
 
   const sizeClasses = {
     sm: 'px-2.5 py-1.5 text-xs',
-    md: 'px-3.5 py-2 text-sm',
-    lg: 'px-4 py-2.5 text-base',
+    md: 'px-3.5 py-2.5 text-xs',
+    lg: 'px-4 py-3 text-sm',
   }[size];
 
   return (
@@ -45,15 +69,17 @@ export const Select: React.FC<SelectProps> = ({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between rounded-lg border bg-white text-slate-800 transition-all ${sizeClasses} ${
-          isOpen ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-sm' : 'border-slate-200 hover:border-slate-300'
+        className={`w-full flex items-center justify-between rounded-xl border bg-white text-slate-800 shadow-2xs transition-all ${sizeClasses} ${
+          isOpen
+            ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-sm bg-white'
+            : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50/40'
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'cursor-pointer'}`}
       >
-        <span className={`truncate ${!selectedOption ? 'text-slate-400 font-normal' : 'font-medium'}`}>
+        <span className={`truncate ${!selectedOption ? 'text-slate-400 font-normal' : 'font-semibold text-slate-800'}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
 
-        <div className="flex items-center gap-1.5 ml-2">
+        <div className="flex items-center gap-1.5 ml-2 shrink-0">
           {clearable && selectedOption && !disabled && (
             <span
               onClick={(e) => {
@@ -74,7 +100,11 @@ export const Select: React.FC<SelectProps> = ({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 mt-1.5 w-full min-w-[160px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-elevated animate-fade-in">
+        <div
+          className={`absolute z-50 w-full min-w-[220px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl animate-fade-in ${
+            openUpward ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          }`}
+        >
           {searchable && (
             <div className="flex items-center gap-2 px-2.5 py-1.5 mb-1 border-b border-slate-100">
               <Search size={13} className="text-slate-400" />
@@ -89,7 +119,7 @@ export const Select: React.FC<SelectProps> = ({
             </div>
           )}
 
-          <div className="max-h-56 overflow-y-auto custom-scrollbar-light">
+          <div className="max-h-56 overflow-y-auto custom-scrollbar-light space-y-0.5">
             {filteredOptions.length === 0 ? (
               <div className="py-2.5 px-3 text-center text-xs text-slate-400 font-medium">Không có lựa chọn nào</div>
             ) : (
@@ -103,7 +133,7 @@ export const Select: React.FC<SelectProps> = ({
                       setSearch('');
                     }
                   }}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     opt.disabled
                       ? 'opacity-40 cursor-not-allowed text-slate-400'
                       : opt.value === value
@@ -111,8 +141,15 @@ export const Select: React.FC<SelectProps> = ({
                       : 'text-slate-700 hover:bg-slate-50 cursor-pointer'
                   }`}
                 >
-                  <span className="truncate">{opt.label}</span>
-                  {opt.value === value && <Check size={14} className="text-brand-600 ml-2" />}
+                  <div className="flex flex-col min-w-0 pr-2">
+                    <span className="truncate">{opt.label}</span>
+                    {opt.sublabel && (
+                      <span className="text-[10px] text-slate-400 font-normal truncate mt-0.5">
+                        {opt.sublabel}
+                      </span>
+                    )}
+                  </div>
+                  {opt.value === value && <Check size={14} className="text-brand-600 shrink-0 ml-1" />}
                 </div>
               ))
             )}

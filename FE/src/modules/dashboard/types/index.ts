@@ -5,7 +5,7 @@ export interface MetricItem {
   numeric_value: number;
   unit: string;
   badge_text: string;
-  badge_type: 'success' | 'warning' | 'info' | 'purple';
+  badge_type: 'success' | 'warning' | 'info' | 'purple' | 'danger';
   icon: 'wallet' | 'trending-up' | 'receipt' | 'activity';
 }
 
@@ -63,4 +63,8 @@ export interface DashboardOverviewData {
   scope_type?: 'all' | 'user';
   scope_user_name?: string;
   accounts?: AccountOption[];
+  is_exhausted?: boolean;
+  available_images?: number;
+  user_balance?: number;
+  provider_balance?: number;
 }
