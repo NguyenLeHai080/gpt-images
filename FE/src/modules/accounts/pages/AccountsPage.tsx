@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Shield,
   Plus,
@@ -11,6 +12,7 @@ import {
   Edit3,
   KeyRound,
   Crown,
+  Eye,
 } from 'lucide-react';
 import { Table, type Column } from '../../../core/components/Table';
 import { Button } from '../../../core/components/Button/Button';
@@ -263,6 +265,15 @@ export const AccountsPage: React.FC = () => {
 
         return (
           <div className="flex items-center justify-end gap-1">
+            {/* 0. Xem Tổng Quan Tài Khoản */}
+            <Link
+              to={`/app/overview?user_id=${record.id}`}
+              className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              title="Xem Tổng Quan Tài Khoản Khách Hàng"
+            >
+              <Eye size={14} />
+            </Link>
+
             {/* 1. Sửa Thông Tin User */}
             {canManageThisUser && (
               <button

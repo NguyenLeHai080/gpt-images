@@ -20,17 +20,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
   // Completely filter out menu items that the user doesn't have permission for
   const visibleNavGroups = useMemo(() => {
+    const isMember = userRole === 'MEMBER';
     return SIDEBAR_NAV_GROUPS.map((group) => {
-      const items = group.items.filter((item) => {
-        // If the item requires specific roles and the current user doesn't have it -> HIDE completely!
-        if (item.requiredRoles && !item.requiredRoles.includes(userRole as any)) {
-          return false;
-        }
-        return true;
-      });
+      const items = group.items
+        .filter((item) => {
+          // If the item requires specific roles and the current user doesn't have it -> HIDE completely!
+          if (item.requiredRoles && !item.requiredRoles.includes(userRole as any)) {
+            return false;
+          }
+          return true;
+        })
+        .map((item) => {
+          if (item.id === 'overview' && isMember) {
+            return { ...item, label: 'Tổng quan tài khoản' };
+          }
+          return item;
+        });
+
+      let subHeader = group.subHeader;
+      if (isMember && group.header === 'KHÔNG GIAN LÀM VIỆC') {
+        subHeader = 'TỔNG QUAN TÀI KHOẢN';
+      }
 
       return {
         ...group,
+        subHeader,
         items,
       };
     }).filter((group) => group.items.length > 0);

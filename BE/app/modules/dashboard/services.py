@@ -36,12 +36,22 @@ class DashboardService:
             # 1. Xác định phân quyền và phạm vi dữ liệu (Scope)
             is_admin = bool(user and user.role in ("SUPER_ADMIN", "ADMIN"))
             
+            scope_user_email = None
+            scope_user_role = None
+            scope_user_company = None
+
             if is_admin:
                 if target_user_id and target_user_id != "all":
                     target_user = db.query(User).filter(User.id == target_user_id).first()
                     scope_user_id = target_user.id if target_user else None
                     scope_type = "user" if target_user else "all"
-                    scope_user_name = (target_user.full_name or target_user.email) if target_user else "Toàn hệ thống"
+                    if target_user:
+                        scope_user_name = target_user.full_name or target_user.email
+                        scope_user_email = target_user.email
+                        scope_user_role = target_user.role
+                        scope_user_company = target_user.company_name
+                    else:
+                        scope_user_name = "Toàn hệ thống"
                 else:
                     scope_user_id = None
                     scope_type = "all"
@@ -50,7 +60,13 @@ class DashboardService:
                 # User thường: Bắt buộc chỉ load dữ liệu tài khoản của chính mình
                 scope_user_id = user.id if user else None
                 scope_type = "user"
-                scope_user_name = (user.full_name or user.email) if user else "Tài khoản cá nhân"
+                if user:
+                    scope_user_name = user.full_name or user.email
+                    scope_user_email = user.email
+                    scope_user_role = user.role
+                    scope_user_company = user.company_name
+                else:
+                    scope_user_name = "Khách Hàng"
 
             # 2. Dữ liệu Tài chính & Ví
             if scope_user_id:
@@ -267,6 +283,9 @@ class DashboardService:
                 model_distribution=model_distribution,
                 scope_type=scope_type,
                 scope_user_name=scope_user_name,
+                scope_user_email=scope_user_email,
+                scope_user_role=scope_user_role,
+                scope_user_company=scope_user_company,
                 accounts=accounts,
                 is_exhausted=is_exhausted,
                 available_images=avail_imgs,
