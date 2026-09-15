@@ -93,24 +93,7 @@ def init_database() -> None:
             admin_user = db.query(User).first()
         print("[PostgreSQL] Seeded system users with multiple roles.")
 
-        # 2. Seed Clean Master API Key if none exists
-        total_keys = db.query(ApiKey).count()
-        if total_keys == 0 and admin_user:
-            api_key = ApiKey(
-                id="key_master_admin",
-                user_id=admin_user.id,
-                name="API Key Chính (Production Cổng Khách)",
-                key_prefix="mf_live_sec_master...",
-                hashed_key=get_password_hash("secret_key_master_admin"),
-                rate_limit="120 req/min",
-                status="active",
-                last_used_at="Vừa xong",
-            )
-            db.add(api_key)
-            db.commit()
-            print("[PostgreSQL] Seeded clean Master API Key.")
-
-        # 3. Seed Wallets for Users
+        # 2. Seed Wallets for Users
         for u in db.query(User).all():
             w = db.query(Wallet).filter(Wallet.user_id == u.id).first()
             if not w:
