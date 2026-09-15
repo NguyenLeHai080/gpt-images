@@ -271,7 +271,11 @@ class DashboardService:
             weekday_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
             date_display = f"{weekday_names[now.weekday()]}, {now.day} tháng {now.month}, {now.year}"
 
-            prov_balance = 100000.0 if (is_admin and scope_type == "all") else None
+            prov_balance = (
+                float(provider_client.get_wallet_balance().get("balance", 0.0))
+                if (is_admin and scope_type == "all")
+                else None
+            )
 
             return DashboardOverviewResponse(
                 date_display=date_display,
