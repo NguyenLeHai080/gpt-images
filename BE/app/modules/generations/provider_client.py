@@ -19,7 +19,7 @@ class ProviderClient:
     def __init__(self):
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         self.timeout = 180
-        self.is_quota_exhausted = True  # Key hiện tại trên Xompet đã hết quota (429 request_limit_exhausted)
+        self.is_quota_exhausted = False
         self.custom_budget_total: Optional[float] = None
 
     def get_configured_budget_total(self) -> float:
@@ -45,11 +45,42 @@ class ProviderClient:
 
     @property
     def base_url(self) -> str:
-        return getattr(settings, "UPSTREAM_PROVIDER_URL", "").rstrip("/")
+        url = getattr(settings, "UPSTREAM_PROVIDER_URL", "").rstrip("/")
+        if not url:
+            try:
+                from app.core.database import SessionLocal
+                from app.modules.providers.models import AIProvider
+                db = SessionLocal()
+                try:
+                    p = db.query(AIProvider).filter(AIProvider.is_primary == True, AIProvider.is_active == True).first()
+                    if p and p.base_url:
+                        url = p.base_url.rstrip("/")
+                        settings.UPSTREAM_PROVIDER_URL = url
+                finally:
+                    db.close()
+            except Exception:
+                pass
+        return url
 
     @property
     def raw_api_key(self) -> str:
-        return getattr(settings, "UPSTREAM_PROVIDER_KEY", "")
+        key = getattr(settings, "UPSTREAM_PROVIDER_KEY", "")
+        if not key:
+            try:
+                from app.core.database import SessionLocal
+                from app.modules.providers.models import AIProvider
+                db = SessionLocal()
+                try:
+                    p = db.query(AIProvider).filter(AIProvider.is_primary == True, AIProvider.is_active == True).first()
+                    if p and p.api_key:
+                        key = p.api_key
+                        settings.UPSTREAM_PROVIDER_KEY = key
+                        settings.UPSTREAM_PROVIDER_NAME = p.name
+                finally:
+                    db.close()
+            except Exception:
+                pass
+        return key
 
     @property
     def default_model(self) -> str:
