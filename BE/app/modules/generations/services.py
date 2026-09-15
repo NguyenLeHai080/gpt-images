@@ -261,8 +261,8 @@ class GenerationService:
         m_info = dashboard_service.get_maintenance_mode(db)
         if m_info.get("is_maintenance"):
             try:
-                from app.modules.dashboard.models import ApiActivityLog
                 log_entry = ApiActivityLog(
+                    id=f"act_{uuid.uuid4().hex[:12]}",
                     user_name=user.full_name or user.email,
                     model_name=f"{request.model} [Bảo Trì]",
                     status="maintenance",
