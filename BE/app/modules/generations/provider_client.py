@@ -45,11 +45,11 @@ class ProviderClient:
 
     @property
     def base_url(self) -> str:
-        return getattr(settings, "UPSTREAM_PROVIDER_URL", "https://api.xompet.io.vn/v1").rstrip("/")
+        return getattr(settings, "UPSTREAM_PROVIDER_URL", "").rstrip("/")
 
     @property
     def raw_api_key(self) -> str:
-        return getattr(settings, "UPSTREAM_PROVIDER_KEY", "sk-9r-N17BHJNt9a4E2TlrCdhHq3fvdIsiLnzz")
+        return getattr(settings, "UPSTREAM_PROVIDER_KEY", "")
 
     @property
     def default_model(self) -> str:
@@ -57,6 +57,8 @@ class ProviderClient:
 
     def _build_url(self, endpoint: str) -> str:
         base = self.base_url
+        if not base:
+            return endpoint
         ep = endpoint.strip()
         if not ep.startswith("/"):
             ep = "/" + ep
@@ -66,8 +68,31 @@ class ProviderClient:
 
     def get_wallet_balance(self) -> Dict[str, Any]:
         """
-        Lấy trạng thái số dư và thông tin quota trực tiếp từ endpoint /v1/usage của Xompet.
+        Lấy trạng thái số dư và thông tin quota trực tiếp từ endpoint /v1/usage của Upstream Provider.
         """
+        if not self.raw_api_key or not self.base_url:
+            return {
+                "balance": 0.0,
+                "currency": "VND",
+                "status": "unconfigured",
+                "is_exhausted": True,
+                "low_balance_warning": False,
+                "key_name": "Chưa cấu hình",
+                "key_masked": "Chưa cấu hình",
+                "limit_type": "none",
+                "percent_remaining": 0,
+                "budget_total": 0.0,
+                "budget_used": 0.0,
+                "budget_remaining": 0.0,
+                "used_percent": 0.0,
+                "status_text": "Chưa cấu hình nhà cung cấp",
+                "models_rates": [],
+                "raw": {
+                    "provider": getattr(settings, "UPSTREAM_PROVIDER_NAME", "Chưa cấu hình"),
+                    "base_url": self.base_url,
+                }
+            }
+
         try:
             usage_url = self._build_url("/usage")
             headers = {"Authorization": f"Bearer {self.raw_api_key}"}
@@ -135,11 +160,11 @@ class ProviderClient:
             "budget_used": 0.0,
             "budget_remaining": balance,
             "used_percent": 0.0,
-            "key_masked": self.raw_api_key[:10] + "..." + self.raw_api_key[-4:],
+            "key_masked": (self.raw_api_key[:10] + "..." + self.raw_api_key[-4:]) if self.raw_api_key else "Chưa cấu hình",
             "status_text": "Bình thường" if not self.is_quota_exhausted else "Hết Quota",
             "models_rates": fallback_rates,
             "raw": {
-                "provider": getattr(settings, "UPSTREAM_PROVIDER_NAME", "Xompet AI Gateway"),
+                "provider": getattr(settings, "UPSTREAM_PROVIDER_NAME", "Chưa cấu hình"),
                 "base_url": self.base_url,
             }
         }
@@ -369,6 +394,13 @@ class ProviderClient:
         """
         start_time = time.time()
         active_key = (provider_key or "").strip() or self.raw_api_key
+        if not active_key or not self.base_url:
+            return (400, {
+                "error": {
+                    "code": "PROVIDER_NOT_CONFIGURED",
+                    "message": "Hệ thống chưa cấu hình Nhà Cung Cấp AI (Upstream Provider). Vui lòng thêm và kích hoạt NCC tại trang Quản trị NCC."
+                }
+            }, 0)
 
         # 1. Chuẩn hóa model, pixel size và quality
         mapped_model = self.normalize_model(model)
