@@ -6,6 +6,8 @@ import { generationsApi } from '../api';
 import { billingApi } from '../../billing/api';
 import { alert } from '../../../core/alert';
 import { ReferenceImageUploader } from './studio/ReferenceImageUploader';
+import { useAuth } from '../../../core/hooks/useAuth';
+import type { ProviderStatus } from '../types';
 
 interface StudioModalProps {
   isOpen: boolean;
@@ -51,6 +53,9 @@ const MODEL_SELECT_OPTIONS: SelectOption[] = [
 ];
 
 export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+
   const [mode, setMode] = useState<'create' | 'edit'>('create');
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState('gpt-image-2.5-flare');
@@ -59,21 +64,30 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
   const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
   const [referenceUrl, setReferenceUrl] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
   const [customerBalance, setCustomerBalance] = useState<number | null>(null);
   const [balanceAmountStr, setBalanceAmountStr] = useState<string>('0 đ');
 
   useEffect(() => {
     if (isOpen) {
-      billingApi.getWallet().then((res) => {
-        if (res.data) {
-          setBalanceAmountStr(res.data.balance_amount || '0 đ');
-          if (res.data.balance != null) {
-            setCustomerBalance(res.data.balance);
+      if (isAdmin) {
+        generationsApi.getProviderStatus().then((res) => {
+          if (res.data) {
+            setProviderStatus(res.data);
           }
-        }
-      }).catch((e) => console.warn('[StudioModal] Lỗi lấy số dư ví:', e));
+        }).catch((e) => console.warn('[StudioModal] Lỗi lấy trạng thái NCC:', e));
+      } else {
+        billingApi.getWallet().then((res) => {
+          if (res.data) {
+            setBalanceAmountStr(res.data.balance_amount || '0 đ');
+            if (res.data.balance != null) {
+              setCustomerBalance(res.data.balance);
+            }
+          }
+        }).catch((e) => console.warn('[StudioModal] Lỗi lấy số dư ví:', e));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, isAdmin]);
 
   // Điền prompt mẫu ngẫu nhiên
   const handleRandomPrompt = () => {
@@ -88,10 +102,18 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
       return;
     }
 
-    if (customerBalance !== null && customerBalance < 150) {
+    if (!isAdmin && customerBalance !== null && customerBalance < 150) {
       alert.error(
         'Số dư không đủ',
         `Số dư ví hiện tại là ${balanceAmountStr}. Cần tối thiểu 150 đ để tạo ảnh. Vui lòng nạp thêm tiền qua SePay / VietQR!`
+      );
+      return;
+    }
+
+    if (isAdmin && providerStatus && !providerStatus.is_connected) {
+      alert.error(
+        'Chưa cấu hình Nhà Cung Cấp',
+        'Hệ thống chưa kết nối Nhà Cung Cấp AI (NCC) khả dụng. Vui lòng cấu hình API Key nhà cung cấp tại Quản lý Nhà Cung Cấp trước khi tạo ảnh!'
       );
       return;
     }
@@ -161,20 +183,50 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
               Tạo Ảnh Bằng AI
             </h3>
             <p className="text-xs text-slate-500 font-normal mt-0.5 whitespace-nowrap">
-              Đồng giá <strong className="text-brand-600 font-bold">150 đ</strong> / ảnh • Chỉ trừ tiền khi tạo thành công
+              {isAdmin ? (
+                <>
+                  Chế độ Quản trị viên: <strong className="text-purple-600 font-bold">Cổng NCC Trực Tiếp</strong> • Giá vốn ~75 đ/ảnh • Không trừ ví cá nhân
+                </>
+              ) : (
+                <>
+                  Đồng giá <strong className="text-brand-600 font-bold">150 đ</strong> / ảnh • Chỉ trừ tiền khi tạo thành công
+                </>
+              )}
             </p>
           </div>
-          {customerBalance !== null && (
+          {isAdmin ? (
             <div className={`px-2.5 py-1 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
-              customerBalance >= 150
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+              providerStatus?.is_connected
+                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
             }`}>
-              <span>Ví: {balanceAmountStr}</span>
-              <span className="text-[10px] font-normal opacity-80">
-                ({customerBalance >= 150 ? `~${Math.floor(customerBalance / 150)} ảnh` : 'Hết số dư'})
+              <span>
+                Ví Tổng NCC:{' '}
+                {providerStatus
+                  ? (providerStatus.budget_remaining && providerStatus.budget_remaining > 0
+                      ? `${providerStatus.budget_remaining.toLocaleString('vi-VN')} đ`
+                      : (providerStatus.is_connected ? 'Kết nối NCC' : 'Chưa cấu hình'))
+                  : 'Đang kết nối...'}
               </span>
+              {providerStatus?.budget_remaining && providerStatus.budget_remaining > 0 ? (
+                <span className="text-[10px] font-normal opacity-80">
+                  (~{Math.floor(providerStatus.budget_remaining / 75)} ảnh)
+                </span>
+              ) : null}
             </div>
+          ) : (
+            customerBalance !== null && (
+              <div className={`px-2.5 py-1 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 ${
+                customerBalance >= 150
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+              }`}>
+                <span>Ví: {balanceAmountStr}</span>
+                <span className="text-[10px] font-normal opacity-80">
+                  ({customerBalance >= 150 ? `~${Math.floor(customerBalance / 150)} ảnh` : 'Hết số dư'})
+                </span>
+              </div>
+            )
           )}
         </div>
       }
@@ -182,12 +234,16 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
         <div className="flex items-center justify-between gap-3 w-full whitespace-nowrap">
           {/* Tóm tắt chi phí an tâm */}
           <div className="flex items-center gap-2 text-xs whitespace-nowrap">
-            <span className="font-extrabold text-brand-600 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg whitespace-nowrap">
-              150 đ / ảnh
+            <span className={`font-extrabold px-2.5 py-1 rounded-lg whitespace-nowrap border ${
+              isAdmin
+                ? 'text-purple-700 bg-purple-50 border-purple-200'
+                : 'text-brand-600 bg-brand-50 border-brand-200'
+            }`}>
+              {isAdmin ? 'Vốn NCC ~75 đ / request' : '150 đ / ảnh'}
             </span>
             <span className="text-slate-400">•</span>
             <span className="text-[11px] text-emerald-600 font-medium whitespace-nowrap">
-              Hoàn 100% nếu lỗi
+              {isAdmin ? 'Đồng bộ dòng tiền NCC' : 'Hoàn 100% nếu lỗi'}
             </span>
           </div>
 
@@ -196,7 +252,7 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
             <Button variant="ghost" size="sm" onClick={onClose} type="button" disabled={isGenerating}>
               Hủy
             </Button>
-            {customerBalance !== null && customerBalance < 150 ? (
+            {!isAdmin && customerBalance !== null && customerBalance < 150 ? (
               <Button
                 variant="primary"
                 size="md"
