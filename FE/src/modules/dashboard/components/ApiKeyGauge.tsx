@@ -8,10 +8,10 @@ interface ApiKeyGaugeProps {
 }
 
 export const ApiKeyGauge: React.FC<ApiKeyGaugeProps> = ({ status }) => {
-  const total = status.total_managed || 1;
+  const total = status.total_managed || 0;
   const active = status.active_keys || 0;
   const other = status.other_keys || 0;
-  const percentage = Math.min(Math.max(Math.round((active / total) * 100), 0), 100);
+  const percentage = total > 0 ? Math.min(Math.max(Math.round((active / total) * 100), 0), 100) : 0;
 
   // Chu vi bán nguyệt (bán kính r = 75): pi * r = 235.6
   const circumference = 235.6;
@@ -33,7 +33,7 @@ export const ApiKeyGauge: React.FC<ApiKeyGaugeProps> = ({ status }) => {
           </p>
         </div>
         <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-          <ShieldCheck size={12} /> {percentage}% Khả dụng
+          <ShieldCheck size={12} /> {total > 0 ? `${percentage}% Khả dụng` : 'Chưa có Key'}
         </span>
       </div>
 
