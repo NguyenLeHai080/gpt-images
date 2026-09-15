@@ -13,6 +13,7 @@ import {
   Zap,
   RefreshCw,
   ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../core/hooks/useAuth';
@@ -156,41 +157,90 @@ export const BillingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Primary Customer Wallet Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card padding="md" className="border-l-4 border-l-brand-500">
-          <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
-            <Wallet size={18} className="text-brand-500" />
-            <span>Số dư ví khả dụng</span>
-          </div>
-          <div className="text-2xl font-black mt-2.5 text-slate-900">
-            {wallet?.balance_amount || '0 đ'}
-          </div>
-          <Badge variant="success" style={{ marginTop: 8 }}>Sẵn sàng gọi API</Badge>
-        </Card>
+      {/* Cảnh báo khi khách hết số dư (dưới 150đ) */}
+      {(() => {
+        const isOutOfBalance = wallet?.is_exhausted ?? (wallet?.balance != null ? wallet.balance < 150 : false);
+        const availImgs = wallet?.available_images ?? (wallet?.balance != null ? Math.floor(wallet.balance / 150) : 0);
 
-        <Card padding="md" className="border-l-4 border-l-emerald-500">
-          <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
-            <CreditCard size={18} className="text-emerald-500" />
-            <span>Tổng tiền đã nạp</span>
-          </div>
-          <div className="text-2xl font-black mt-2.5 text-slate-900">
-            {wallet?.total_deposited || '0 đ'}
-          </div>
-          <Badge variant="info" style={{ marginTop: 8 }}>Tích lũy trọn đời</Badge>
-        </Card>
+        return (
+          <>
+            {isOutOfBalance && (
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200 shadow-2xs">
+                    <AlertTriangle size={20} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-bold text-rose-900 block">
+                      Số dư ví của bạn đã hết ({wallet?.balance_amount || '0 đ'})
+                    </span>
+                    <span className="text-xs text-rose-700 block mt-0.5 leading-relaxed">
+                      Mỗi yêu cầu tạo ảnh tiêu thụ <strong className="font-bold">150 đ</strong>. Hiện tại số dư không đủ để thực hiện tạo ảnh tiếp theo. Vui lòng quét mã QR hoặc nạp tiền qua SePay để nạp thêm.
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm shadow-rose-600/30 whitespace-nowrap"
+                    onClick={handleDeposit}
+                    leftIcon={<ArrowDownToLine size={14} />}
+                  >
+                    Nạp Tiền Ngay
+                  </Button>
+                </div>
+              </div>
+            )}
 
-        <Card padding="md" className="border-l-4 border-l-amber-500">
-          <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
-            <ArrowDownToLine size={18} className="text-amber-500" />
-            <span>Chi phí API 7 ngày qua</span>
-          </div>
-          <div className="text-2xl font-black mt-2.5 text-slate-900">
-            {wallet?.api_spent || '0 đ'}
-          </div>
-          <Badge variant="warning" style={{ marginTop: 8 }}>Mức tiêu thụ tiết kiệm</Badge>
-        </Card>
-      </div>
+            {/* Primary Customer Wallet Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card padding="md" className={`border-l-4 ${isOutOfBalance ? 'border-l-rose-500 bg-rose-50/10' : 'border-l-brand-500'}`}>
+                <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
+                  <Wallet size={18} className={isOutOfBalance ? 'text-rose-500' : 'text-brand-500'} />
+                  <span>Số dư ví khả dụng</span>
+                </div>
+                <div className="text-2xl font-black mt-2.5 text-slate-900">
+                  {wallet?.balance_amount || '0 đ'}
+                </div>
+                {isOutOfBalance ? (
+                  <div className="mt-2 space-y-1">
+                    <Badge variant="danger">Hết số dư — Cần nạp thêm</Badge>
+                    <p className="text-[11px] text-rose-600 font-semibold block">Cần tối thiểu 150 đ / ảnh</p>
+                  </div>
+                ) : (
+                  <div className="mt-2 space-y-1">
+                    <Badge variant="success">Tạo được ~{availImgs.toLocaleString()} ảnh</Badge>
+                    <p className="text-[11px] text-emerald-600 font-medium block">150 đ / ảnh thành công</p>
+                  </div>
+                )}
+              </Card>
+
+              <Card padding="md" className="border-l-4 border-l-emerald-500">
+                <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
+                  <CreditCard size={18} className="text-emerald-500" />
+                  <span>Tổng tiền đã nạp</span>
+                </div>
+                <div className="text-2xl font-black mt-2.5 text-slate-900">
+                  {wallet?.total_deposited || '0 đ'}
+                </div>
+                <Badge variant="info" style={{ marginTop: 8 }}>Tích lũy trọn đời</Badge>
+              </Card>
+
+              <Card padding="md" className="border-l-4 border-l-amber-500">
+                <div className="flex items-center gap-2.5 text-slate-500 text-xs font-semibold">
+                  <ArrowDownToLine size={18} className="text-amber-500" />
+                  <span>Chi phí đã tiêu thụ</span>
+                </div>
+                <div className="text-2xl font-black mt-2.5 text-slate-900">
+                  {wallet?.api_spent || '0 đ'}
+                </div>
+                <Badge variant="warning" style={{ marginTop: 8 }}>Chỉ trừ khi ảnh thành công</Badge>
+              </Card>
+            </div>
+          </>
+        );
+      })()}
 
       {/* AI Gateway PnL & Provider Cashflow Section (Chỉ hiển thị cho Quản trị viên) */}
       {isAdmin && (
@@ -199,10 +249,10 @@ export const BillingPage: React.FC = () => {
             <div>
               <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
                 <TrendingUp size={18} className="text-brand-500" />
-                <span>Dòng Tiền & Lời Lỗ Cổng AI (Model gpt-image-2)</span>
+                <span>Dòng Tiền & Lời Lỗ Cổng AI (Model GPT Image 2.5 / 2)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Phân luồng đối soát thu từ khách hàng (150đ) vs chi phí vốn trả Nhà Cung Cấp (120đ).
+                Phân luồng đối soát thu từ khách hàng (150đ) vs chi phí vốn trả Nhà Cung Cấp Xompet (75đ).
               </p>
             </div>
             <Link to="/app/pnl">
@@ -240,7 +290,7 @@ export const BillingPage: React.FC = () => {
                   <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">
                     {financials?.saved_provider_cost && financials.saved_provider_cost > 0
                       ? `⚡ Tiết kiệm: ${formatVND(financials.saved_provider_cost)} (Cache)`
-                      : '120 đ / ảnh trả NCC'}
+                      : '75 đ / ảnh trả NCC Xompet'}
                   </p>
                 </div>
                 <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
@@ -257,7 +307,7 @@ export const BillingPage: React.FC = () => {
                     {formatVND(financials?.gross_profit ?? 0)}
                   </h3>
                   <p className="text-[10px] text-slate-400 mt-0.5">
-                    Biên lãi: 20% (+30 đ / ảnh)
+                    Biên lãi: ~50% (+75 đ / ảnh)
                   </p>
                 </div>
                 <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -281,7 +331,7 @@ export const BillingPage: React.FC = () => {
                     </button>
                   </div>
                   <h3 className="text-xl font-black text-purple-700 mt-1">
-                    {formatVND(providerStatus?.wallet_balance ?? 24462)}
+                    {formatVND(providerStatus?.wallet_balance ?? 0)}
                   </h3>
                   <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
                     AI Cluster Engine (Active)

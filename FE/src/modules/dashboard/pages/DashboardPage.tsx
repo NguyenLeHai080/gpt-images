@@ -7,6 +7,9 @@ import {
   ExternalLink,
   Zap,
   Globe,
+  Wallet,
+  AlertTriangle,
+  ArrowDownToLine,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../core/hooks/useAuth';
@@ -32,10 +35,29 @@ export const DashboardPage: React.FC = () => {
     alert.toast('Dữ liệu hệ thống đã được cập nhật mới nhất!', 'success');
   };
 
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="animate-spin text-brand-500" size={32} />
+          <span className="text-sm font-medium text-slate-500">Đang tải dữ liệu tổng quan...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Phân biệt chế độ xem: Toàn hệ thống (Admin) vs Tài khoản Khách hàng (User)
+  const isCustomerView = !isAdmin || selectedUserId !== 'all';
+  const balanceMetric = data.metrics.find((m) => m.id === 'api_balance');
+  const userBalance = data.user_balance ?? (balanceMetric?.numeric_value ?? 0);
+  const userBalanceFormatted = balanceMetric?.value ?? `${Math.round(userBalance).toLocaleString('vi-VN')} đ`;
+  const availableImages = data.available_images ?? Math.floor(userBalance / 150);
+  const isExhausted = data.is_exhausted ?? (userBalance < 150);
+
   return (
-    <div className="animate-fade-in flex flex-col gap-6 sm:gap-8 pb-12">
-      {/* Top Banner Header */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-brand-950 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+    <div className="space-y-6 pb-12">
+      {/* Hero Welcome Banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-brand-950 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         {/* Glow effect */}
         <div className="absolute -right-12 -top-12 w-96 h-96 bg-brand-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute right-1/3 -bottom-16 w-64 h-64 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -50,8 +72,30 @@ export const DashboardPage: React.FC = () => {
               </span>
 
               <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-white/10 text-slate-300 border border-white/10 flex items-center gap-1">
-                <Zap size={12} className="text-amber-400" /> Model gpt-image-2
+                <Zap size={12} className="text-amber-400" /> Cổng Tạo Ảnh AI (4 Models)
               </span>
+
+              {/* CHỈ hiển thị Ví NCC cho Admin khi xem Toàn hệ thống */}
+              {!isCustomerView ? (
+                <Link to="/app/pnl" className="hover:opacity-85 transition-opacity">
+                  <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    <Wallet size={12} className="text-emerald-400" /> Ví NCC: 100.000 đ (100% Quota)
+                  </span>
+                </Link>
+              ) : (
+                /* Tài khoản user/khách: CHỈ hiển thị ví của chính khách đó */
+                <Link to="/app/billing" className="hover:opacity-85 transition-opacity">
+                  {!isExhausted ? (
+                    <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                      <Wallet size={12} className="text-emerald-400" /> Ví Khách: {userBalanceFormatted} (~{availableImages.toLocaleString()} ảnh)
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5 animate-pulse">
+                      <AlertTriangle size={12} className="text-rose-400" /> Hết Số Dư: {userBalanceFormatted} (Nạp thêm)
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {isAdmin ? (
                 <span className="px-2.5 py-0.5 rounded-full font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
@@ -66,16 +110,16 @@ export const DashboardPage: React.FC = () => {
 
             {/* Title */}
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
-              {isAdmin && selectedUserId === 'all'
+              {!isCustomerView
                 ? 'Tổng Quan Hệ Thống & Quản Trị Vận Hành'
                 : `Tổng Quan Tài Khoản: ${data.scope_user_name || 'Khách Hàng'}`}
             </h1>
 
             {/* Subtitle */}
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-              {isAdmin && selectedUserId === 'all'
+              {!isCustomerView
                 ? `Dữ liệu tài chính ví, lưu lượng API và các tác vụ tạo ảnh của toàn bộ hệ thống (${data.date_display}).`
-                : `Dữ liệu tiêu thụ, số dư ví và nhật ký tạo ảnh riêng của tài khoản ${data.scope_user_name} (${data.date_display}).`}
+                : `Dữ liệu tiêu thụ, số dư ví khả dụng (~${availableImages.toLocaleString()} ảnh với giá 150đ/ảnh) và nhật ký của bạn (${data.date_display}).`}
             </p>
           </div>
 
@@ -115,6 +159,35 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Cảnh báo hết số dư cho tài khoản khách hàng */}
+      {isCustomerView && isExhausted && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200 shadow-2xs">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-rose-900 block">
+                Số dư tài khoản của bạn đã hết ({userBalanceFormatted})
+              </span>
+              <span className="text-xs text-rose-700 block mt-0.5 leading-relaxed">
+                Đơn giá dịch vụ là <strong className="font-bold">150 đ / ảnh</strong> (hoàn 100% nếu lỗi). Số dư hiện tại không đủ để tiếp tục gọi API hoặc tạo ảnh trên Studio. Vui lòng nạp thêm tiền để không bị gián đoạn.
+              </span>
+            </div>
+          </div>
+          <Link to="/app/billing" className="shrink-0 w-full sm:w-auto">
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm shadow-rose-600/30 whitespace-nowrap"
+              leftIcon={<ArrowDownToLine size={14} />}
+            >
+              Nạp Tiền Vào Ví Ngay
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Admin Account Switcher Toolbar */}
       {isAdmin && data.accounts && data.accounts.length > 0 && (

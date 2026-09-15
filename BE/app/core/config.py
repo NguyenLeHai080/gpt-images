@@ -40,6 +40,15 @@ class Settings:
         "*"
     ]
     
+    # Public Gateway Base URL for Upstream Reference Delivery
+    PUBLIC_API_URL: str = os.getenv("PUBLIC_API_URL", "https://api-gpt-images.nexoratech.com.vn")
+
+    # Upstream AI Provider Configuration (Xompet / Cunai Gateway)
+    UPSTREAM_PROVIDER_NAME: str = os.getenv("UPSTREAM_PROVIDER_NAME", "Xompet AI Gateway")
+    UPSTREAM_PROVIDER_URL: str = os.getenv("UPSTREAM_PROVIDER_URL", "https://api.xompet.io.vn/v1")
+    UPSTREAM_PROVIDER_KEY: str = os.getenv("UPSTREAM_PROVIDER_KEY", "sk-9r-N17BHJNt9a4E2TlrCdhHq3fvdIsiLnzz")
+    UPSTREAM_DEFAULT_IMAGE_MODEL: str = os.getenv("UPSTREAM_DEFAULT_IMAGE_MODEL", "gpt-image-2.5-flare")
+
     # Upload Directories
     BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")

@@ -58,4 +58,8 @@ class DashboardOverviewResponse(BaseModel):
     model_distribution: List[ModelDistributionItem]
     scope_type: str = "all"  # "all" | "user"
     scope_user_name: Optional[str] = "Toàn hệ thống"
-    accounts: List[AccountOption] = []
+    accounts: Optional[List[AccountOption]] = None
+    is_exhausted: bool = False
+    available_images: int = 0
+    user_balance: float = 0.0
+    provider_balance: Optional[float] = None

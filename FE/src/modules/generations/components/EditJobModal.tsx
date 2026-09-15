@@ -112,7 +112,7 @@ export const EditJobModal: React.FC<EditJobModalProps> = ({
           </div>
           <div>
             <span className="text-[10px] text-slate-400 block">Chất lượng (Quality):</span>
-            <span className="font-bold text-purple-700 uppercase truncate block">{job.quality || 'high'}</span>
+            <span className="font-bold text-purple-700 uppercase truncate block">{job.quality || 'medium'}</span>
           </div>
         </div>
       </form>

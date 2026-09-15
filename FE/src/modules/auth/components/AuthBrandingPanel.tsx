@@ -32,13 +32,13 @@ export const AuthBrandingPanel: React.FC = () => {
         </h1>
 
         <p className="mf-branding-desc">
-          Cổng phân phối API model <strong>gpt-image-2</strong>, tạo ảnh tức thì với Smart Cache 25ms, định giá linh hoạt và kiểm soát dòng tiền tự động.
+          Cổng phân phối API mô hình <strong>GPT Image 2.5 Series</strong>, tạo ảnh tức thì với Smart Cache 25ms, định giá linh hoạt và kiểm soát dòng tiền tự động.
         </p>
 
         {/* Feature Tags */}
         <div className="flex items-center gap-2 flex-wrap mb-7 text-xs font-semibold">
           <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 flex items-center gap-1.5 font-mono">
-            <Sparkles size={12} className="text-orange-400" /> gpt-image-2
+            <Sparkles size={12} className="text-orange-400" /> GPT Image 2.5
           </span>
           <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300 flex items-center gap-1.5">
             <Zap size={12} className="text-amber-400" /> Smart Cache 0đ

@@ -16,7 +16,7 @@ class ImageGenerationJob(Base):
     model = Column(String(64), default="gpt-image-2", nullable=False)
     aspect_ratio = Column(String(32), default="1024x1024", nullable=False)
     resolution = Column(String(32), default="1k", nullable=True)
-    quality = Column(String(32), default="high", nullable=True)
+    quality = Column(String(32), default="medium", nullable=True)
     reference = Column(Text, nullable=True)
     references = Column(Text, nullable=True)
     count = Column(Integer, default=1, nullable=False)
@@ -34,11 +34,12 @@ class ImageGenerationJob(Base):
     error_code = Column(String(64), nullable=True)
     raw_response = Column(Text, nullable=True)
     latency_ms = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=1650, nullable=True) # Token tiêu thụ từ NCC
     
     # Financials (VND)
-    cost_provider = Column(Float, default=120.0)    # Chi phí trả NCC: 120đ (0đ nếu Cache Hit)
+    cost_provider = Column(Float, default=75.0)    # Chi phí trả NCC: 75đ (0đ nếu Cache Hit)
     charged_customer = Column(Float, default=150.0) # Thu từ khách: 150đ
-    profit = Column(Float, default=30.0)            # Lợi nhuận gộp: 30đ (+150đ nếu Cache Hit)
+    profit = Column(Float, default=75.0)            # Lợi nhuận gộp: 75đ (+150đ nếu Cache Hit)
     
     created_at = Column(DateTime, default=datetime.now, index=True)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
@@ -55,7 +56,7 @@ class ImageGenerationCache(Base):
     model = Column(String(64), default="gpt-image-2", nullable=False)
     aspect_ratio = Column(String(32), default="1024x1024", nullable=False)
     resolution = Column(String(32), default="1k", nullable=False)
-    quality = Column(String(32), default="high", nullable=True)
+    quality = Column(String(32), default="medium", nullable=True)
     references_json = Column(Text, nullable=True)
     image_url = Column(Text, nullable=False)
     provider_task_id = Column(String(128), nullable=True)

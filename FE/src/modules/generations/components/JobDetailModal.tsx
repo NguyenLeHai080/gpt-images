@@ -3,6 +3,7 @@ import { Modal } from '../../../core/components/Modal/Modal';
 import { Button } from '../../../core/components/Button/Button';
 import { Badge } from '../../../core/components/Badge/Badge';
 import { Download, AlertTriangle, Eye } from 'lucide-react';
+import { formatDateTimeVN } from '../../../core/utils/date';
 import type { JobLogItem } from '../types';
 
 interface JobDetailModalProps {
@@ -33,7 +34,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
               </span>
             </div>
             <p className="text-xs text-slate-500 font-normal mt-0.5">
-              Khởi tạo lúc: {new Date(job.created_at).toLocaleString('vi-VN')} • Model: {job.model}
+              Khởi tạo lúc: {formatDateTimeVN(job.created_at)} • Model: {job.model}
             </p>
           </div>
         </div>
@@ -65,13 +66,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
         {job.status === 'FAILED' && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 space-y-1.5 text-red-800">
             <div className="font-bold flex items-center gap-1.5 text-red-700">
-              <AlertTriangle size={15} /> Thông báo lỗi từ Nhà Cung Cấp:
+              <AlertTriangle size={15} /> Thông báo lỗi từ hệ thống:
             </div>
             <div className="font-mono bg-white p-2.5 rounded-lg border border-red-200 text-[11px] text-red-600 break-words">
-              {job.error_message || 'Lỗi không xác định từ upstream provider'}
+              {job.error_message || 'Lỗi không xác định từ hệ thống xử lý'}
             </div>
             <p className="text-[11px] text-red-600">
-              ℹ️ Khách hàng không bị trừ tiền (Thu: 0đ / Vốn: 0đ).
+              ℹ️ Số dư của bạn không bị trừ khi yêu cầu tạo ảnh không thành công.
             </p>
           </div>
         )}
@@ -123,7 +124,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
           <div>
             <span className="text-slate-400 block text-[10px]">Chất lượng (Quality):</span>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-purple-700 uppercase mt-0.5 inline-block">
-              {job.quality || 'high'}
+              {job.quality || 'medium'}
             </span>
           </div>
           <div>
@@ -165,7 +166,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
                     ? '0đ'
                     : job.is_cached
                     ? '0đ (⚡ Cache)'
-                    : `${Math.round(job.cost_provider ?? 120)}đ`}
+                    : `${Math.round(job.cost_provider ?? 75)}đ`}
                 </span>
               </div>
               <div className="bg-white p-2.5 rounded-lg border border-slate-200/80">
@@ -185,7 +186,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
                     ? '0đ'
                     : job.is_cached
                     ? `+${Math.round(job.profit ?? job.charged_customer ?? 150)}đ (100%)`
-                    : `+${Math.round(job.profit ?? 30)}đ`}
+                    : `+${Math.round(job.profit ?? 75)}đ`}
                 </span>
               </div>
             </div>

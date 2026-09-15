@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, Query, Depends, HTTPException, status
 from app.core.responses import success_response, error_response
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_roles
 from app.modules.auth.models import User
 from app.modules.accounts.schemas import (
     CreateUserRequest,
@@ -12,7 +12,11 @@ from app.modules.accounts.schemas import (
 )
 from app.modules.accounts.services import accounts_service
 
-router = APIRouter(prefix="/accounts", tags=["Accounts Management"])
+router = APIRouter(
+    prefix="/accounts",
+    tags=["Accounts Management"],
+    dependencies=[Depends(require_roles(["SUPER_ADMIN", "ADMIN"]))]
+)
 
 @router.get("")
 def list_accounts(

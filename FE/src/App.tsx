@@ -13,6 +13,7 @@ import { CreditConfigPage } from './modules/billing/pages/CreditConfigPage';
 import { SepayTransactionsPage } from './modules/billing/pages/SepayTransactionsPage';
 import { PackagesPage } from './modules/packages/pages/PackagesPage';
 import { PricingPage } from './modules/pricing/pages/PricingPage';
+import { ProvidersPage } from './modules/providers/pages/ProvidersPage';
 import { ToolsPage } from './modules/tools/pages/ToolsPage';
 import { AccountsPage } from './modules/accounts/pages/AccountsPage';
 import { PermissionsPage } from './modules/permissions/pages/PermissionsPage';
@@ -117,6 +118,14 @@ export const App: React.FC = () => {
                       />
                       <Route path="packages" element={<PackagesPage />} />
                       <Route path="pricing" element={<PricingPage />} />
+                      <Route
+                        path="providers"
+                        element={
+                          <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'ADMIN']}>
+                            <ProvidersPage />
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route path="tools" element={<ToolsPage />} />
                       <Route path="" element={<Navigate to="overview" replace />} />
 

@@ -13,6 +13,7 @@ import {
   Sparkles,
   TrendingUp,
   BookOpen,
+  Server,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -44,7 +45,7 @@ export const SIDEBAR_NAV_GROUPS: NavGroupConfig[] = [
     ],
   },
   {
-    header: 'CỔNG AI GENERATOR (gpt-image-2)',
+    header: 'CỔNG AI GENERATOR (GPT Image 2.5)',
     items: [
       { id: 'studio', label: 'Studio Tạo ảnh AI', path: '/app/studio', icon: Sparkles },
       { id: 'jobs', label: 'Quản lý Jobs & Nhật ký', path: '/app/jobs', icon: Layers },
@@ -88,6 +89,15 @@ export const SIDEBAR_NAV_GROUPS: NavGroupConfig[] = [
         label: 'Bảng giá model',
         path: '/app/pricing',
         icon: Receipt,
+      },
+      {
+        id: 'providers',
+        label: 'Quản lý NCC',
+        path: '/app/providers',
+        icon: Server,
+        badge: 'Active',
+        badgeVariant: 'brand',
+        requiredRoles: ['SUPER_ADMIN', 'ADMIN'],
       },
       {
         id: 'tools',

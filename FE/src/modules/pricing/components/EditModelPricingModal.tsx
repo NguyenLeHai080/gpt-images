@@ -19,24 +19,24 @@ export const EditModelPricingModal: React.FC<EditModelPricingModalProps> = ({
   item,
   onSuccess,
 }) => {
-  const [providerCost, setProviderCost] = useState<number>(120);
+  const [providerCost, setProviderCost] = useState<number>(75);
   const [basePrice, setBasePrice] = useState<number>(150);
-  const [tokenRate, setTokenRate] = useState<number>(1024);
+  const [tokenRate, setTokenRate] = useState<number>(1650);
   const [status, setStatus] = useState<string>('ACTIVE');
   const [displayName, setDisplayName] = useState<string>('');
-  const [provider, setProvider] = useState<string>('Nexora AI Core');
+  const [provider, setProvider] = useState<string>('Xompet AI Gateway');
   const [latencyRange, setLatencyRange] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (item) {
-      setProviderCost(item.provider_cost ?? 120);
+      setProviderCost(item.provider_cost ?? 75);
       setBasePrice(item.base_price ?? 150);
-      setTokenRate(item.token_rate ?? 1024);
+      setTokenRate(item.token_rate ?? 1650);
       setStatus(item.status || 'ACTIVE');
       setDisplayName(item.display_name || '');
-      setProvider(item.provider || 'Nexora AI Core');
+      setProvider(item.provider || 'Xompet AI Gateway');
       setLatencyRange(item.latency_range || '25ms (Cache) - 3.2s (Gen)');
       setDescription(item.description || '');
     }

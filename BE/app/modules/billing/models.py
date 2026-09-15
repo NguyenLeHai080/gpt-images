@@ -42,3 +42,16 @@ class SepayWebhookLog(Base):
     raw_payload = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+class ProviderBudgetLog(Base):
+    __tablename__ = "provider_budget_logs"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    provider_name = Column(String, default="Xompet AI Gateway", nullable=False)
+    key_masked = Column(String, nullable=True)
+    amount = Column(Float, nullable=False)
+    budget_before = Column(Float, default=0.0, nullable=False)
+    budget_after = Column(Float, default=0.0, nullable=False)
+    note = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+

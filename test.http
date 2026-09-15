@@ -1,0 +1,27 @@
+### 2. Test Sửa ảnh / Biến thể (Image-to-Image Edit) trực tiếp tới Nhà Cung Cấp
+POST https://api.leeh.dev/v1/images/generations
+Authorization: Bearer sk-5BZ6LD4DPV5BW75GFNVL4BBOMOHKXDOK37LLQROO7NNVXXSXQ55A====
+Content-Type: application/json
+
+{
+  "prompt": "Thêm mặt trời vào ảnh",
+  "model": "gpt-image-2",
+  "modelKey": "gpt-image-2",
+  "mode": "edit",
+  "sourceImages": ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="],
+  "executionMode": "sync",
+  "aspectRatio": "1024x1024",
+  "count": 1
+}
+
+### 3. Test Tạo ảnh qua hệ thống Gateway của mình (Tự động dịch prompt + resize ảnh mẫu)
+POST https://api-gpt-images.nexoratech.com.vn/api/v1/images/generations
+Content-Type: application/json
+
+{
+  "prompt": "Một chú chó con dễ thương đang chạy trên bãi cỏ mùa xuân",
+  "model": "gpt-image-2",
+  "aspect_ratio": "1:1",
+  "quality": "medium",
+  "count": 1
+}
