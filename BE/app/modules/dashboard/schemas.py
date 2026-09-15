@@ -17,8 +17,8 @@ class ChartPoint(BaseModel):
     requests: int
 
 class ApiKeyStatus(BaseModel):
-    total_managed: int = 28
-    active_keys: int = 28
+    total_managed: int = 0
+    active_keys: int = 0
     other_keys: int = 0
 
 class ActivityItem(BaseModel):
@@ -30,10 +30,10 @@ class ActivityItem(BaseModel):
     timestamp: str
 
 class OperationSummary(BaseModel):
-    active_keys: int = 28
-    synced_keys: int = 28
-    successful_requests: int = 33861
-    uptime: str = "99.9%"
+    active_keys: int = 0
+    synced_keys: int = 0
+    successful_requests: int = 0
+    uptime: str = "100%"
 
 class ModelDistributionItem(BaseModel):
     model_id: str
