@@ -43,26 +43,26 @@ export const ProviderWalletCard: React.FC<ProviderWalletCardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
         <div>
           <span className="text-slate-400 block text-[10px]">Cổng NCC chính:</span>
-          <span className="font-bold text-purple-700 truncate block" title={status?.provider_name || 'Xompet AI Gateway'}>
-            {status?.provider_name || 'Xompet AI Gateway'}
+          <span className="font-bold text-purple-700 truncate block" title={status?.provider_name || 'Chưa cấu hình'}>
+            {status?.provider_name || 'Chưa cấu hình'}
           </span>
         </div>
         <div>
           <span className="text-slate-400 block text-[10px]">Key giới hạn API:</span>
-          <span className="font-bold text-slate-800 font-mono text-[11px] truncate block" title={status?.key_masked || 'sk-9r-N1...zz'}>
-            {status?.key_masked || 'sk-9r-N1...zz'}
+          <span className="font-bold text-slate-800 font-mono text-[11px] truncate block" title={status?.key_masked || 'Chưa cấu hình'}>
+            {status?.key_masked || 'Chưa cấu hình'}
           </span>
         </div>
         <div>
           <span className="text-slate-400 block text-[10px]">Số dư còn lại (Quota):</span>
           <span className="font-bold text-emerald-600 text-sm">
-            {formatVND(status?.budget_remaining ?? status?.wallet_balance ?? 100000)}
+            {formatVND(status?.budget_remaining ?? status?.wallet_balance ?? 0)}
           </span>
         </div>
         <div>
           <span className="text-slate-400 block text-[10px]">Ước tính tạo thêm:</span>
           <span className="font-bold text-amber-600">
-            ~ {Math.floor((status?.budget_remaining ?? status?.wallet_balance ?? 100000) / 75)} ảnh
+            ~ {Math.floor((status?.budget_remaining ?? status?.wallet_balance ?? 0) / 75)} ảnh
           </span>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const ProviderWalletCard: React.FC<ProviderWalletCardProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-emerald-400 text-xs font-bold">●</span>
             <span className="text-xs font-semibold text-slate-200">
-              Hạn mức API Xompet (Đồng bộ QuotaGuard Engine)
+              Hạn mức API Nhà Cung Cấp (Đồng bộ QuotaGuard Engine)
             </span>
           </div>
           <div className="flex items-center gap-1.5">

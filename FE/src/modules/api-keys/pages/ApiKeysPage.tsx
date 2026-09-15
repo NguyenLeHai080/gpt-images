@@ -781,7 +781,7 @@ export const ApiKeysPage: React.FC = () => {
                       <span className="text-slate-400">Khóa API Gốc (Upstream):</span>
                       <div className="flex items-center gap-1.5 font-mono text-[11px]">
                         <span className="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
-                          {isRevealed ? (p.api_key_masked || 'sk-9r9208a1c89f42...') : 'sk-9r••••••••••••••••'}
+                          {isRevealed ? (p.api_key_masked || 'sk-••••••••') : '••••••••••••••••'}
                         </span>
                         <button
                           type="button"

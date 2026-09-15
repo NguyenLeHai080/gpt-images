@@ -25,62 +25,17 @@ class ProvidersService:
         return f"{key[:6]}...{key[-4:]}"
 
     def ensure_seeded(self, db: Session) -> None:
-        """Khởi tạo danh sách các nhà cung cấp AI ban đầu nếu bảng rỗng"""
+        """Đồng bộ runtime settings với primary provider nếu có trong DB"""
         try:
             count = db.query(AIProvider).count()
             if count > 0:
                 primary = db.query(AIProvider).filter(AIProvider.is_primary == True).first()
                 if primary:
                     self._sync_runtime_settings(primary, db)
-                return
-
-            initial_providers = [
-                {
-                    "id": "prov_xompet",
-                    "name": "Xompet AI Gateway",
-                    "provider_code": "xompet",
-                    "base_url": getattr(settings, "UPSTREAM_PROVIDER_URL", "https://api.xompet.io.vn/v1"),
-                    "api_key": getattr(settings, "UPSTREAM_PROVIDER_KEY", "sk-9r-N17BHJNt9a4E2TlrCdhHq3fvdIsiLnzz"),
-                    "default_model": getattr(settings, "UPSTREAM_DEFAULT_IMAGE_MODEL", "gpt-image-2.5-flare"),
-                    "models_supported": json.dumps([
-                        "gpt-image-2.5-flare",
-                        "gpt-image-2.5-sunburst",
-                        "gpt-image-2",
-                        "nanobanana-2"
-                    ]),
-                    "cost_per_image": 75.0,
-                    "is_primary": True,
-                    "is_active": True,
-                    "status": "ONLINE",
-                    "latency_ms": 32,
-                    "notes": "Cổng NCC chính hiện tại. Hỗ trợ chuẩn Native OpenAI Image API (/v1/images/generations và /v1/images/edits), tính tiền theo ảnh thành công (fail không tính, ảnh refer miễn phí)."
-                },
-                {
-                    "id": "prov_openai",
-                    "name": "OpenAI Official Gateway",
-                    "provider_code": "openai",
-                    "base_url": "https://api.openai.com/v1",
-                    "api_key": "sk-proj-official-openai-fallback-key-2026",
-                    "default_model": "dall-e-3",
-                    "models_supported": json.dumps([
-                        "dall-e-3",
-                        "dall-e-2"
-                    ]),
-                    "cost_per_image": 960.0,
-                    "is_primary": False,
-                    "is_active": False,
-                    "status": "STANDBY",
-                    "latency_ms": 115,
-                    "notes": "Cổng kết nối dự phòng quốc tế (Standby), chuyển mạch tức thì khi cụm chính nâng cấp hoặc quá tải."
-                }
-            ]
-
-            for item in initial_providers:
-                db.add(AIProvider(**item))
-            db.commit()
-            print("[PostgreSQL] Seeded initial AI providers (Xompet, OpenAI).")
+            else:
+                # Không tự động seed nhà cung cấp cũ và key cũ; để trống cho admin cấu hình mới
+                pass
         except Exception as e:
-            db.rollback()
             print(f"[ProvidersService] Warning on ensure_seeded: {e}")
 
     def _to_schema(self, p: AIProvider, include_full_key: bool = False) -> ProviderItem:

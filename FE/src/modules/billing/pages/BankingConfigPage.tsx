@@ -589,11 +589,11 @@ export const BankingConfigPage: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     <span className="font-mono text-xs text-slate-300">
-                      Key: {budgetOverview?.key_masked || 'sk-9r-N17BHJNt9a4E...Lnzz'}
+                      Key: {budgetOverview?.key_masked || 'Chưa cấu hình'}
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleCopy(budgetOverview?.key_masked || 'sk-9r-N17BHJNt9a4E...Lnzz', 'API Key')}
+                      onClick={() => handleCopy(budgetOverview?.key_masked || 'Chưa cấu hình', 'API Key')}
                       className="text-slate-400 hover:text-white transition-colors p-0.5"
                       title="Sao chép Key"
                     >
