@@ -155,19 +155,26 @@ class GenerationService:
                 if isinstance(usage, dict):
                     total_tokens = usage.get("total_tokens", 1650)
 
+                is_admin = bool(user and user.role in ("SUPER_ADMIN", "ADMIN"))
+
                 job.status = "SUCCEEDED"
                 job.provider_generation_id = provider_task_id
                 job.provider_task_id = provider_task_id
                 job.image_url = image_url
                 job.total_tokens = total_tokens
                 job.cost_provider = cost_amount
-                job.charged_customer = required_amount
-                job.profit = profit_amount
+                job.charged_customer = 0.0 if is_admin else required_amount
+                job.profit = -cost_amount if is_admin else profit_amount
                 job.raw_response = str(resp_data)[:1000]
 
-                if wallet:
+                # Trừ tiền ví đối với khách hàng thường (MEMBER)
+                if not is_admin and wallet:
                     wallet.balance -= required_amount
                     wallet.api_spent += required_amount
+                elif is_admin:
+                    # Super Admin: Đồng bộ ngân sách NCC
+                    if provider_client.custom_budget_total and provider_client.custom_budget_total > 0:
+                        provider_client.custom_budget_total = max(0.0, provider_client.custom_budget_total - cost_amount)
 
                 if not request.no_cache and image_url:
                     prompt_cache.set(
@@ -184,13 +191,16 @@ class GenerationService:
                     )
 
                 if user:
+                    activity_cost = cost_amount if is_admin else required_amount
+                    activity_cost_disp = f"{cost_amount:,.0f} đ (Vốn NCC)" if is_admin else f"{required_amount:,.0f} đ"
+                    activity_model = f"{request.model} [Admin NCC]" if is_admin else request.model
                     activity = ApiActivityLog(
                         id=f"act_{uuid.uuid4().hex[:12]}",
                         user_name=user.full_name or user.email,
-                        model_name=request.model,
+                        model_name=activity_model,
                         status="success",
-                        cost=required_amount,
-                        cost_display=f"{required_amount:,.0f} đ",
+                        cost=activity_cost,
+                        cost_display=activity_cost_disp,
                         created_at=datetime.utcnow()
                     )
                     db.add(activity)
@@ -275,15 +285,17 @@ class GenerationService:
         cost_amount = prov_cost_unit * request.count
         profit_amount = (cust_price_unit - prov_cost_unit) * request.count
 
-        # 1. Kiểm tra ví của khách hàng
+        is_admin = bool(user and user.role in ("SUPER_ADMIN", "ADMIN"))
+
+        # 1. Kiểm tra ví và quyền hạn khởi tạo
         wallet = db.query(Wallet).filter(Wallet.user_id == user.id).first()
         if not wallet:
             # Tự động tạo ví nếu chưa có
             wallet = Wallet(
                 id=f"wallet_{uuid.uuid4().hex[:12]}",
                 user_id=user.id,
-                balance=15000.0,  # Tặng 15k trải nghiệm tương đương 100 ảnh
-                total_deposited=15000.0,
+                balance=0.0,
+                total_deposited=0.0,
                 api_spent=0.0,
                 currency="VND"
             )
@@ -291,11 +303,25 @@ class GenerationService:
             db.commit()
             db.refresh(wallet)
 
-        if wallet.balance < required_amount:
-            raise HTTPException(
-                status_code=402,
-                detail=f"Số dư tài khoản không đủ ({wallet.balance:,.0f} đ). Cần tối thiểu {required_amount:,.0f} đ để tạo {request.count} hình ảnh."
-            )
+        if not is_admin:
+            # Thành viên thường (MEMBER): Bắt buộc kiểm tra số dư ví API cá nhân
+            if wallet.balance < required_amount:
+                raise HTTPException(
+                    status_code=402,
+                    detail=f"Số dư tài khoản không đủ ({wallet.balance:,.0f} đ). Cần tối thiểu {required_amount:,.0f} đ để tạo {request.count} hình ảnh. Vui lòng nạp thêm tiền qua SePay / VietQR."
+                )
+        else:
+            # Quản trị viên (SUPER_ADMIN / ADMIN): Sử dụng hạn mức/ví số dư tổng Nhà cung cấp AI (NCC)
+            if not provider_client.raw_api_key or not provider_client.base_url:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Chưa cấu hình Nhà cung cấp AI (Upstream Provider). Vui lòng cấu hình API Key nhà cung cấp tại trang Quản lý Nhà cung cấp trước khi tạo job."
+                )
+            if provider_client.is_quota_exhausted:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Hạn mức/Ngân sách Nhà cung cấp AI (NCC) đã cạn kiệt. Vui lòng nạp thêm ngân sách NCC tại Quản lý Ngân sách NCC."
+                )
 
         # 2. Khởi tạo Job trong Database
         job_id = f"job_{uuid.uuid4().hex[:16]}"
@@ -340,6 +366,8 @@ class GenerationService:
             cached_data = prompt_cache.get(db, cache_key)
             if cached_data and cached_data.get("image_url"):
                 # === CACHE HIT: PHẢN HỒI SIÊU TỐC, TIẾT KIỆM 100% VỐN NCC ===
+                cached_charged = 0.0 if is_admin else required_amount
+                cached_profit = 0.0 if is_admin else required_amount
                 cached_job = ImageGenerationJob(
                     id=job_id,
                     user_id=user.id,
@@ -359,24 +387,25 @@ class GenerationService:
                     provider_task_id=cached_data.get("provider_task_id") or "cache_hit",
                     provider_generation_id=cached_data.get("provider_task_id") or "cache_hit",
                     cost_provider=0.0,            # 0đ vốn trả NCC!
-                    charged_customer=required_amount, # Thu 150đ từ khách
-                    profit=required_amount,       # Thuần lợi nhuận 150đ (100% margin)
+                    charged_customer=cached_charged, # Thu tiền từ khách hoặc 0đ nếu Super Admin
+                    profit=cached_profit,
                     latency_ms=25,
                     created_at=datetime.now()
                 )
                 db.add(cached_job)
 
-                # Trừ ví khách
-                wallet.balance -= required_amount
-                wallet.api_spent += required_amount
+                # Chỉ trừ ví khách hàng MEMBER
+                if not is_admin and wallet:
+                    wallet.balance -= required_amount
+                    wallet.api_spent += required_amount
 
                 activity = ApiActivityLog(
                     id=f"act_{uuid.uuid4().hex[:12]}",
                     user_name=user.full_name or user.email,
-                    model_name=f"{request.model} [⚡ Cache]",
+                    model_name=f"{request.model} [⚡ Cache]" + (" [Admin]" if is_admin else ""),
                     status="success",
-                    cost=required_amount,
-                    cost_display=f"{required_amount:,.0f} đ",
+                    cost=cached_charged,
+                    cost_display=f"{cached_charged:,.0f} đ" if not is_admin else "0 đ (Admin Cache)",
                     created_at=datetime.now()
                 )
                 db.add(activity)
@@ -425,8 +454,8 @@ class GenerationService:
             status="PROCESSING",
             is_cached=False,
             cost_provider=cost_amount,
-            charged_customer=required_amount,
-            profit=profit_amount,
+            charged_customer=0.0 if is_admin else required_amount,
+            profit=-cost_amount if is_admin else profit_amount,
             created_at=datetime.now()
         )
         db.add(job)
@@ -574,13 +603,18 @@ class GenerationService:
             job.image_url = image_url
             job.total_tokens = total_tokens
             job.cost_provider = cost_amount
-            job.charged_customer = required_amount
-            job.profit = profit_amount
+            job.charged_customer = 0.0 if is_admin else required_amount
+            job.profit = -cost_amount if is_admin else profit_amount
             job.raw_response = str(resp_data)[:1000]
 
-            # Trừ tiền ví khách hàng
-            wallet.balance -= required_amount
-            wallet.api_spent += required_amount
+            # Trừ tiền ví đối với khách hàng (MEMBER)
+            if not is_admin and wallet:
+                wallet.balance -= required_amount
+                wallet.api_spent += required_amount
+            elif is_admin:
+                # Super Admin: Đồng bộ ngân sách NCC
+                if provider_client.custom_budget_total and provider_client.custom_budget_total > 0:
+                    provider_client.custom_budget_total = max(0.0, provider_client.custom_budget_total - cost_amount)
 
             # Lưu vào Smart Cache nếu không tắt cache
             if not request.no_cache and image_url:
@@ -598,13 +632,16 @@ class GenerationService:
                 )
 
             # Ghi nhận activity log
+            act_cost = cost_amount if is_admin else required_amount
+            act_cost_disp = f"{cost_amount:,.0f} đ (Vốn NCC)" if is_admin else f"{required_amount:,.0f} đ"
+            act_model = f"{request.model} [Admin NCC]" if is_admin else request.model
             activity = ApiActivityLog(
                 id=f"act_{uuid.uuid4().hex[:12]}",
                 user_name=user.full_name or user.email,
-                model_name=request.model,
+                model_name=act_model,
                 status="success",
-                cost=required_amount,
-                cost_display=f"{required_amount:,.0f} đ",
+                cost=act_cost,
+                cost_display=act_cost_disp,
                 created_at=datetime.utcnow()
             )
             db.add(activity)

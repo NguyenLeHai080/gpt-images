@@ -643,7 +643,7 @@ export const BankingConfigPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-2 text-2xl font-mono font-black tracking-tight text-white">
-                  {(budgetOverview?.budget_total ?? 100000).toLocaleString('vi-VN')} đ
+                  {(budgetOverview?.budget_total ?? 0).toLocaleString('vi-VN')} đ
                 </div>
                 <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
@@ -681,11 +681,11 @@ export const BankingConfigPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-2 text-2xl font-mono font-black tracking-tight text-emerald-400">
-                  {(budgetOverview?.budget_remaining ?? 100000).toLocaleString('vi-VN')} đ
+                  {(budgetOverview?.budget_remaining ?? 0).toLocaleString('vi-VN')} đ
                 </div>
                 <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-400/90 font-medium">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>~ {budgetOverview?.available_images_estimate ?? 1333} ảnh có thể tạo</span>
+                  <span>~ {budgetOverview?.available_images_estimate ?? 0} ảnh có thể tạo</span>
                 </div>
               </div>
             </div>
@@ -694,10 +694,10 @@ export const BankingConfigPage: React.FC = () => {
             <div className="relative z-10 rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-2">
               <div className="flex items-center justify-between text-xs font-mono">
                 <span className="text-slate-300">
-                  Tiến độ: <strong className="text-amber-400">{(budgetOverview?.budget_used ?? 0).toLocaleString('vi-VN')} đ</strong> / {(budgetOverview?.budget_total ?? 100000).toLocaleString('vi-VN')} đ ({budgetOverview?.used_percent ?? 0}% đã dùng)
+                  Tiến độ: <strong className="text-amber-400">{(budgetOverview?.budget_used ?? 0).toLocaleString('vi-VN')} đ</strong> / {(budgetOverview?.budget_total ?? 0).toLocaleString('vi-VN')} đ ({budgetOverview?.used_percent ?? 0}% đã dùng)
                 </span>
                 <span className="text-emerald-400 font-bold">
-                  Khả dụng: {(budgetOverview?.budget_remaining ?? 100000).toLocaleString('vi-VN')} đ ({100 - (budgetOverview?.used_percent ?? 0)}%)
+                  Khả dụng: {(budgetOverview?.budget_remaining ?? 0).toLocaleString('vi-VN')} đ ({100 - (budgetOverview?.used_percent ?? 0)}%)
                 </span>
               </div>
               <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden p-0.5">
