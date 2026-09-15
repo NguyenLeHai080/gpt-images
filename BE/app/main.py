@@ -20,6 +20,7 @@ from app.modules.generations.api import router as generations_router
 from app.modules.packages.api import router as packages_router
 from app.modules.pricing.api import router as pricing_router
 from app.modules.tools.api import router as tools_router
+from app.modules.providers.api import router as providers_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialize database tables and seed initial data
@@ -60,17 +61,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.core.sanitizer import PayloadLimitMiddleware, scrub_upstream_leakage
+from fastapi.openapi.utils import get_openapi
+import json
+import re
+
 # Standardized Global HTTP Error Handlers
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request, exc):
+    raw_msg = exc.detail or "Lỗi yêu cầu HTTP"
+    clean_msg = scrub_upstream_leakage(str(raw_msg))
+
+    # Chuẩn OpenAI error format cho các client gọi qua /v1/ hoặc SDK bên thứ 3
+    is_v1 = (
+        request.url.path.startswith("/v1/") or
+        "openai" in request.headers.get("user-agent", "").lower()
+    )
+    if is_v1:
+        msg_lower = clean_msg.lower()
+        extra_headers = {}
+        if exc.status_code == 503 or "bảo trì" in msg_lower or "maintenance" in msg_lower:
+            err_code = "system_under_maintenance"
+            err_type = "maintenance_error"
+            extra_headers["Retry-After"] = "300"
+            extra_headers["x-maintenance-mode"] = "active"
+            extra_headers["x-balance-preserved"] = "true"
+        elif exc.status_code == 402 or "số dư" in msg_lower:
+            err_code = "insufficient_quota"
+            err_type = "insufficient_quota"
+        elif "hết hạn" in msg_lower or "tạm khóa" in msg_lower:
+            err_code = "key_expired"
+            err_type = "invalid_request_error"
+        elif exc.status_code == 401:
+            err_code = "invalid_api_key"
+            err_type = "invalid_request_error"
+        elif exc.status_code == 429:
+            err_code = "rate_limit_exceeded"
+            err_type = "requests"
+        elif exc.status_code == 404:
+            err_code = "model_not_found"
+            err_type = "invalid_request_error"
+        else:
+            err_code = f"http_{exc.status_code}"
+            err_type = "api_error"
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            headers=extra_headers,
+            content={
+                "error": {
+                    "message": clean_msg,
+                    "type": err_type,
+                    "param": None,
+                    "code": err_code,
+                    "balance_preserved": True if exc.status_code == 503 else False
+                }
+            }
+        )
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "success": False,
             "code": f"HTTP_{exc.status_code}",
-            "message": exc.detail or "Lỗi yêu cầu HTTP",
+            "message": clean_msg,
             "data": None,
-            "error": {"code": f"HTTP_{exc.status_code}", "message": exc.detail or "Lỗi yêu cầu HTTP", "details": None}
+            "error": {"code": f"HTTP_{exc.status_code}", "message": clean_msg, "details": None}
         }
     )
 
@@ -89,16 +145,37 @@ async def validation_exception_handler(request, exc):
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request, exc):
+    raw_err = str(exc) or "Lỗi máy chủ nội bộ"
+    clean_err = scrub_upstream_leakage(raw_err)
     return JSONResponse(
         status_code=500,
         content={
             "success": False,
             "code": "INTERNAL_SERVER_ERROR",
-            "message": str(exc) or "Lỗi máy chủ nội bộ",
+            "message": clean_err,
             "data": None,
-            "error": {"code": "INTERNAL_SERVER_ERROR", "message": str(exc), "details": None}
+            "error": {"code": "INTERNAL_SERVER_ERROR", "message": clean_err, "details": None}
         }
     )
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    # Loại bỏ hoàn toàn dấu vết nhà cung cấp và giá vốn khỏi OpenAPI spec (/openapi.json, /api-docs)
+    schema_str = json.dumps(schema)
+    schema_str = scrub_upstream_leakage(schema_str)
+    # Loại bỏ các từ khóa giá vốn nội bộ khỏi swagger schema
+    schema_str = re.sub(r'giá\s*vốn[^\.,"\n]*', '', schema_str, flags=re.IGNORECASE)
+    app.openapi_schema = json.loads(schema_str)
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Mount Modular Routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
@@ -111,6 +188,7 @@ app.include_router(generations_router, prefix=settings.API_V1_STR)
 app.include_router(packages_router, prefix=settings.API_V1_STR)
 app.include_router(pricing_router, prefix=settings.API_V1_STR)
 app.include_router(tools_router, prefix=settings.API_V1_STR)
+app.include_router(providers_router, prefix=settings.API_V1_STR)
 # Mount thêm không prefix để hỗ trợ chuẩn OpenAI SDK client (base_url: http://127.0.0.1:8001/v1)
 app.include_router(generations_router)
 

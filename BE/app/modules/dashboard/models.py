@@ -10,6 +10,16 @@ class ApiActivityLog(Base):
     user_name = Column(String, default="Nguyen Le Hai", nullable=False)
     model_name = Column(String, default="gpt-image-2", nullable=False)
     status = Column(String, default="success", nullable=False)
-    cost = Column(Float, default=120.0, nullable=False)
-    cost_display = Column(String, default="120 đ", nullable=False)
+    cost = Column(Float, default=75.0, nullable=False)
+    cost_display = Column(String, default="75 đ", nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String, primary_key=True, index=True)
+    value = Column(String, nullable=False)
+    message = Column(String, nullable=True)
+    updated_by = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
