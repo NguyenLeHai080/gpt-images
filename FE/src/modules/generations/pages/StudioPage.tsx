@@ -24,6 +24,7 @@ import { JobStatsCards } from '../components/JobStatsCards';
 import { StudioModal } from '../components/StudioModal';
 import { JobDetailModal } from '../components/JobDetailModal';
 import { EditJobModal } from '../components/EditJobModal';
+import { formatDateTimeVN } from '../../../core/utils/date';
 import type { JobLogItem } from '../types';
 
 export const StudioPage: React.FC = () => {
@@ -256,7 +257,7 @@ export const StudioPage: React.FC = () => {
       title: 'Thời Gian',
       dataIndex: 'created_at',
       render: (val) => (
-        <span className="text-slate-500 text-xs whitespace-nowrap">{new Date(String(val)).toLocaleString('vi-VN')}</span>
+        <span className="text-slate-600 text-xs whitespace-nowrap font-mono">{formatDateTimeVN(val)}</span>
       ),
     },
     {
@@ -325,7 +326,7 @@ export const StudioPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Studio Sáng Tạo Hình Ảnh AI</h1>
             <span className="text-xs bg-brand-50 text-brand-600 px-2.5 py-0.5 rounded-full font-bold border border-brand-200">
-              Model gpt-image-2
+              GPT Image 2.5 (Flare / Sunburst / 2)
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">

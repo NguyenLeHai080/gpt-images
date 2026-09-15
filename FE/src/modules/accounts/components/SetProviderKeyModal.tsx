@@ -74,9 +74,9 @@ export const SetProviderKeyModal: React.FC<SetProviderKeyModalProps> = ({
             <span>Cơ chế phân quyền & hạch toán chi phí:</span>
           </div>
           <ul className="list-disc pl-4 space-y-1 text-blue-800/90 text-[11px] leading-relaxed">
-            <li>API Key được lấy từ tài khoản nhà cung cấp (giá <strong>120đ/ảnh</strong>).</li>
+            <li>API Key được lấy từ tài khoản nhà cung cấp Xompet (giá vốn <strong>75đ/ảnh</strong>).</li>
             <li>Khi khách đăng nhập vào tài khoản này và gọi tạo ảnh: Hệ thống trừ <strong>150đ/ảnh</strong> vào ví khách.</li>
-            <li>Super Admin giữ lại <strong>30đ/ảnh lợi nhuận</strong>.</li>
+            <li>Super Admin giữ lại <strong>75đ/ảnh lợi nhuận gộp (biên lãi 50%)</strong>.</li>
             <li>Thông tin URL và API Key của nhà cung cấp được <strong>bảo mật 100%</strong>, khách chỉ nhìn thấy API Key nội bộ.</li>
           </ul>
         </div>

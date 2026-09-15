@@ -3,6 +3,7 @@ import React from 'react';
 export interface SelectOption {
   label: string;
   value: string | number;
+  sublabel?: string;
   disabled?: boolean;
   icon?: React.ReactNode;
 }
@@ -17,4 +18,6 @@ export interface SelectProps {
   searchable?: boolean;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  placement?: 'auto' | 'top' | 'bottom';
 }
+

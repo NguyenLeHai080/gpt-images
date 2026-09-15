@@ -75,7 +75,7 @@ export const OperationSummaryCard: React.FC<OperationSummaryCardProps> = ({ summ
                 Smart Cache Siêu Tốc (25ms)
               </span>
               <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200">
-                0đ vốn NCC
+                Tức thì
               </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">

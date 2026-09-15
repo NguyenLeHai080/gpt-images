@@ -19,9 +19,9 @@ export interface JobLogItem {
   image_url?: string;
   error_message?: string;
   latency_ms: number;
-  cost_provider?: number;    // 120đ trả NCC (0đ nếu Cache, chỉ admin thấy)
+  cost_provider?: number;    // 75đ trả NCC (0đ nếu Cache, chỉ admin thấy)
   charged_customer: number;  // 150đ thu từ khách
-  profit?: number;           // 30đ lời gộp (+150đ nếu Cache, chỉ admin thấy)
+  profit?: number;           // 75đ lời gộp (+150đ nếu Cache, chỉ admin thấy)
   created_at: string;
 }
 
@@ -55,6 +55,13 @@ export interface FinancialSummary {
   low_balance_warning?: boolean;
 }
 
+export interface ModelRateItem {
+  model: string;
+  display_name: string;
+  cost_per_req: number;
+  unit: string;
+}
+
 export interface ProviderStatus {
   is_connected: boolean;
   provider_name: string;
@@ -63,12 +70,21 @@ export interface ProviderStatus {
   currency: string;
   last_synced_at: string;
   low_balance_warning?: boolean;
+  budget_total?: number;
+  budget_used?: number;
+  budget_remaining?: number;
+  used_percent?: number;
+  key_masked?: string;
+  status_text?: string;
+  models_rates?: ModelRateItem[];
 }
 
 export interface GenerateImagePayload {
   prompt: string;
   model?: string;
   aspectRatio?: string;
+  aspect_ratio?: string;
+  size?: string;
   resolution?: '1k' | '2k' | '4k' | string;
   quality?: 'low' | 'medium' | 'high' | string;
   reference?: string;

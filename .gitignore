@@ -39,3 +39,10 @@ ENV/
 uploads/
 BE/uploads/
 BE/app/uploads/
+
+### Temporary & Scratch test files
+scratch_test_*.py
+test_*.png
+test_*.py
+verify_*.py
+test.http

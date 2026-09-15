@@ -154,7 +154,7 @@ export const useAccounts = () => {
         provider_api_key: providerApiKey,
       });
       if (res.success) {
-        alert.toast('Cập nhật API Key nhà cung cấp (120đ/ảnh) thành công', 'success');
+        alert.toast('Cập nhật API Key nhà cung cấp (75đ/ảnh) thành công', 'success');
         fetchAccounts();
         return true;
       }

@@ -9,6 +9,7 @@ import { Button } from '../../../core/components/Button/Button';
 import { Select } from '../../../core/components/Select';
 import { Sparkles, RefreshCw, Search, Trash2, XCircle } from 'lucide-react';
 import { alert } from '../../../core/alert';
+import { formatDateTimeVN } from '../../../core/utils/date';
 import { generationsApi } from '../api';
 import type { JobLogItem } from '../types';
 
@@ -92,27 +93,37 @@ export const JobsLogPage: React.FC = () => {
       title: 'THỜI GIAN',
       dataIndex: 'created_at',
       render: (val) => (
-        <span className="text-slate-700 text-xs font-normal whitespace-nowrap">
-          {new Date(String(val)).toLocaleString('en-US', {
-            month: 'numeric',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true,
-          })}
+        <span className="text-slate-700 text-xs font-normal whitespace-nowrap font-mono">
+          {formatDateTimeVN(val)}
         </span>
       ),
     },
     {
       key: 'model',
-      title: 'MODEL',
+      title: 'MODEL & THÔNG SỐ',
       dataIndex: 'model',
-      render: (val) => (
-        <span className="font-bold text-slate-800 text-xs whitespace-nowrap font-mono">
-          {val || 'gpt-image-2'}
-        </span>
+      render: (val, record) => (
+        <div className="whitespace-nowrap">
+          <span className="font-bold text-slate-800 text-xs block font-mono">
+            {val || 'gpt-image-2'}
+          </span>
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+              {record.resolution || '1k'}
+            </span>
+            <span
+              className={`text-[10px] font-semibold px-1.5 py-0.2 rounded border uppercase ${
+                record.quality === 'high'
+                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                  : record.quality === 'low'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}
+            >
+              {record.quality || 'medium'}
+            </span>
+          </div>
+        </div>
       ),
     },
     {
@@ -196,7 +207,7 @@ export const JobsLogPage: React.FC = () => {
               }
               return (
                 <span className="font-mono text-slate-700 text-xs whitespace-nowrap">
-                  {record.cost_provider != null ? `${Math.round(record.cost_provider)}đ` : '120đ'}
+                  {record.cost_provider != null ? `${Math.round(record.cost_provider)}đ` : '75đ'}
                 </span>
               );
             },

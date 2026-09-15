@@ -58,12 +58,12 @@ export const PnLManagementPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Quản Trị Dòng Tiền & Lời Lỗ (PnL)</h1>
             <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold border border-emerald-200">
-              Biên Lãi 20%
+              Biên Lãi 50%
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Bán 150 đ / ảnh (Khách hàng) — Vốn 120 đ / ảnh (Nhà cung cấp) — Lợi nhuận gộp{' '}
-            <strong className="text-emerald-600">+30 đ / ảnh thành công</strong>.
+            Bán 150 đ / ảnh (Khách hàng) — Vốn 75 đ / ảnh (Nhà cung cấp Xompet) — Lợi nhuận gộp{' '}
+            <strong className="text-emerald-600">+75 đ / ảnh thành công</strong>.
           </p>
         </div>
         <Button
@@ -105,7 +105,7 @@ export const PnLManagementPage: React.FC = () => {
               <p className="text-[11px] text-emerald-600 font-semibold mt-1">
                 {financials?.saved_provider_cost && financials.saved_provider_cost > 0
                   ? `⚡ Tiết kiệm: ${formatVND(financials.saved_provider_cost)} (Cache)`
-                  : `120 đ / ảnh chi phí máy chủ AI Engine`}
+                  : `75 đ / ảnh chi phí nhà cung cấp Xompet`}
               </p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
@@ -124,7 +124,7 @@ export const PnLManagementPage: React.FC = () => {
               <p className="text-[11px] text-slate-400 mt-1">
                 {financials?.total_cached_jobs && financials.total_cached_jobs > 0
                   ? `Gồm ${financials.total_cached_jobs} ảnh Cache lời 100% (+150đ)`
-                  : '+30 đ / ảnh (Biên lợi nhuận: 20%)'}
+                  : '+75 đ / ảnh (Biên lợi nhuận: 50%)'}
               </p>
             </div>
             <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -138,7 +138,7 @@ export const PnLManagementPage: React.FC = () => {
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Số Dư Ví NCC</p>
               <h3 className="text-2xl font-extrabold text-purple-700 mt-1">
-                {formatVND(providerStatus?.wallet_balance ?? 24462)}
+                {formatVND(providerStatus?.wallet_balance ?? 0)}
               </h3>
               <p className="text-[11px] text-slate-400 mt-1">
                 Cụm máy chủ AI Cluster Engine
@@ -195,12 +195,12 @@ export const PnLManagementPage: React.FC = () => {
               Hệ thống trừ 150 đ / ảnh thành công. Nếu lỗi không trừ tiền.
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <strong className="text-slate-900 block mb-0.5">3. Chi phí tính toán máy chủ:</strong>
-              Hệ thống tự động tính 120 đ / ảnh cho chi phí hạ tầng máy chủ AI Engine. Lợi nhuận ròng thu về 30 đ.
+              <strong className="text-slate-900 block mb-0.5">3. Chi phí tính toán nhà cung cấp:</strong>
+              Hệ thống trừ vốn 75 đ / ảnh cho nhà cung cấp Xompet. Lợi nhuận gộp thu về 75 đ (Biên lãi 50%).
             </div>
             <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-800">
               <strong className="text-emerald-900 block mb-0.5">4. Tái cấp quota máy chủ:</strong>
-              Admin định kỳ dùng dòng tiền nạp của khách để nạp lại quota duy trì cụm máy chủ AI Gateway.
+              Admin định kỳ dùng dòng tiền nạp của khách để nạp lại quota duy trì cụm NCC (Vừa nạp 100.000đ cấp được ~1.333 ảnh).
             </div>
           </div>
         </Card>

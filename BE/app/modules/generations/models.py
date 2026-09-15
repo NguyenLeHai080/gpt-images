@@ -34,11 +34,12 @@ class ImageGenerationJob(Base):
     error_code = Column(String(64), nullable=True)
     raw_response = Column(Text, nullable=True)
     latency_ms = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=1650, nullable=True) # Token tiêu thụ từ NCC
     
     # Financials (VND)
-    cost_provider = Column(Float, default=120.0)    # Chi phí trả NCC: 120đ (0đ nếu Cache Hit)
+    cost_provider = Column(Float, default=75.0)    # Chi phí trả NCC: 75đ (0đ nếu Cache Hit)
     charged_customer = Column(Float, default=150.0) # Thu từ khách: 150đ
-    profit = Column(Float, default=30.0)            # Lợi nhuận gộp: 30đ (+150đ nếu Cache Hit)
+    profit = Column(Float, default=75.0)            # Lợi nhuận gộp: 75đ (+150đ nếu Cache Hit)
     
     created_at = Column(DateTime, default=datetime.now, index=True)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)

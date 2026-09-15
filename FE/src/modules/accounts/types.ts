@@ -24,6 +24,11 @@ export interface AccountStats {
   members: number;
 }
 
+export interface AccountsData {
+  users: UserAccountItem[];
+  stats: AccountStats;
+}
+
 export interface CreateUserData {
   email: string;
   password: string;
