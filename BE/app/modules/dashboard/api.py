@@ -27,7 +27,8 @@ def get_dashboard_overview(
     db: Session = Depends(get_db)
 ):
     current_user = get_current_user_from_request(request, db)
-    data = dashboard_service.get_overview(user=current_user, target_user_id=user_id, db=db)
+    target_id = current_user.id if (current_user and current_user.role == "MEMBER") else user_id
+    data = dashboard_service.get_overview(user=current_user, target_user_id=target_id, db=db)
     return success_response(data.model_dump(), "Lấy dữ liệu tổng quan thành công")
 
 @router.get("/metrics")

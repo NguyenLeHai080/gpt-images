@@ -10,6 +10,8 @@ import {
   Wallet,
   AlertTriangle,
   ArrowDownToLine,
+  Building2,
+  KeyRound,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../core/hooks/useAuth';
@@ -20,6 +22,8 @@ import { ApiKeyGauge } from '../components/ApiKeyGauge';
 import { RecentActivityList } from '../components/RecentActivityList';
 import { OperationSummaryCard } from '../components/OperationSummaryCard';
 import { ModelDistributionCard } from '../components/ModelDistributionCard';
+import { CustomerPortalCard } from '../components/CustomerPortalCard';
+import { CustomerQuickGuideCard } from '../components/CustomerQuickGuideCard';
 import { Button } from '../../../core/components/Button/Button';
 import { Select } from '../../../core/components/Select';
 import { alert } from '../../../core/alert';
@@ -106,13 +110,19 @@ export const DashboardPage: React.FC = () => {
                   <UserIcon size={13} /> Tài Khoản Khách Hàng
                 </span>
               )}
+
+              {isCustomerView && data.scope_user_company && (
+                <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                  <Building2 size={12} /> {data.scope_user_company}
+                </span>
+              )}
             </div>
 
             {/* Title */}
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
               {!isCustomerView
                 ? 'Tổng Quan Hệ Thống & Quản Trị Vận Hành'
-                : `Tổng Quan Tài Khoản: ${data.scope_user_name || 'Khách Hàng'}`}
+                : `Tổng Quan Tài Khoản: ${data.scope_user_name || user?.full_name || 'Khách Hàng'}`}
             </h1>
 
             {/* Subtitle */}
@@ -135,6 +145,19 @@ export const DashboardPage: React.FC = () => {
               Làm mới
             </Button>
 
+            {isCustomerView && (
+              <Link to="/app/billing">
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/30 text-xs"
+                  leftIcon={<ArrowDownToLine size={15} />}
+                >
+                  Nạp Tiền VietQR
+                </Button>
+              </Link>
+            )}
+
             <Link to="/app/studio">
               <Button
                 variant="primary"
@@ -145,6 +168,19 @@ export const DashboardPage: React.FC = () => {
                 Studio Tạo Ảnh
               </Button>
             </Link>
+
+            {isCustomerView && (
+              <Link to="/app/api-keys">
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="border-white/20 text-white hover:bg-white/10 backdrop-blur-xs font-semibold text-xs"
+                  leftIcon={<KeyRound size={14} />}
+                >
+                  API Keys
+                </Button>
+              </Link>
+            )}
 
             <Link to="/app/api-docs">
               <Button
@@ -236,20 +272,28 @@ export const DashboardPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Middle Section: Cost Chart (8 cols) + API Key Gauge (4 cols) */}
+      {/* Middle Section: Cost Chart (8 cols) + API Key Gauge / Customer Portal (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div className="lg:col-span-8">
           <ApiCostChart data={data.chart_data} />
         </div>
         <div className="lg:col-span-4">
-          <ApiKeyGauge status={data.key_status} />
+          {!isCustomerView ? (
+            <ApiKeyGauge status={data.key_status} />
+          ) : (
+            <CustomerPortalCard data={data} />
+          )}
         </div>
       </div>
 
       {/* Bottom Section: 3 Modern Information Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         <RecentActivityList activities={data.recent_activities} />
-        <OperationSummaryCard summary={data.operation_summary} />
+        {!isCustomerView ? (
+          <OperationSummaryCard summary={data.operation_summary} />
+        ) : (
+          <CustomerQuickGuideCard />
+        )}
         <ModelDistributionCard
           models={data.model_distribution}
           onRefresh={refresh}

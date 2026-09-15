@@ -62,6 +62,9 @@ export interface DashboardOverviewData {
   model_distribution: ModelDistributionItem[];
   scope_type?: 'all' | 'user';
   scope_user_name?: string;
+  scope_user_email?: string;
+  scope_user_role?: string;
+  scope_user_company?: string;
   accounts?: AccountOption[];
   is_exhausted?: boolean;
   available_images?: number;
