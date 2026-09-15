@@ -126,28 +126,11 @@ def init_database() -> None:
         db.commit()
         print("[PostgreSQL] Initialized clean user wallets with 0 VND.")
 
-        # 5. Seed Provider Config
-        provider_acc = db.query(ProviderAccount).filter(ProviderAccount.id == "provider_default").first()
-        if not provider_acc:
-            provider_acc = ProviderAccount(
-                id="provider_default",
-                provider_name="Xompet AI Gateway",
-                base_url="https://api.xompet.io.vn/v1",
-                username="xompet-cluster-01",
-                password="••••••••••••",
-                wallet_balance=500000.0,
-                currency="VND",
-                is_active=True
-            )
-            db.add(provider_acc)
-            db.commit()
-            print("[PostgreSQL] Seeded upstream provider account configuration (Xompet).")
-
-        # 6. Seed Model Pricing Rate Cards
+        # 5. Model Pricing Rate Cards
         pricing_service.ensure_seeded(db)
         print("[PostgreSQL] Seeded model pricing rate cards (gpt-image-2, dall-e-3, etc.).")
 
-        # 7. Seed AI Providers Registry (Xompet, OpenAI)
+        # 6. AI Providers Registry (Clean state, user configures via UI)
         providers_service.ensure_seeded(db)
 
     except Exception as e:

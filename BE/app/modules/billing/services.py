@@ -394,8 +394,8 @@ class BillingService:
             is_active = (wallet_info.get("status") == "active")
 
             return ProviderBudgetOverview(
-                provider_name=wallet_info.get("raw", {}).get("provider") or "Xompet AI Gateway",
-                key_masked=wallet_info.get("key_masked", "sk-9r-N1...zz"),
+                provider_name=wallet_info.get("raw", {}).get("provider") or getattr(settings, "UPSTREAM_PROVIDER_NAME", "Chưa cấu hình"),
+                key_masked=wallet_info.get("key_masked", "Chưa cấu hình"),
                 status=wallet_info.get("status", "active"),
                 status_text=wallet_info.get("status_text", "Bình thường"),
                 is_active=is_active,
@@ -423,8 +423,8 @@ class BillingService:
 
         log = ProviderBudgetLog(
             id=f"pbl_{uuid.uuid4().hex[:12]}",
-            provider_name="Xompet AI Gateway",
-            key_masked=provider_client.raw_api_key[:10] + "..." + provider_client.raw_api_key[-4:],
+            provider_name=getattr(settings, "UPSTREAM_PROVIDER_NAME", "Chưa cấu hình"),
+            key_masked=(provider_client.raw_api_key[:10] + "..." + provider_client.raw_api_key[-4:]) if provider_client.raw_api_key else "Chưa cấu hình",
             amount=float(amount),
             budget_before=current_tot,
             budget_after=new_tot,

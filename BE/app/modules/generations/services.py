@@ -829,20 +829,21 @@ class GenerationService:
         balance_val = float(wallet_info.get("balance", 0.0))
         is_low = bool(wallet_info.get("low_balance_warning", balance_val < 5000.0))
 
+        is_connected = bool(wallet_info.get("status") != "unconfigured" and wallet_info.get("key_masked") != "Chưa cấu hình")
         status = ProviderStatus(
-            is_connected=True,
-            provider_name=getattr(settings, "UPSTREAM_PROVIDER_NAME", "Xompet AI Gateway"),
-            username="xompet-master-key",
+            is_connected=is_connected,
+            provider_name=getattr(settings, "UPSTREAM_PROVIDER_NAME", "Chưa cấu hình"),
+            username="master-key",
             wallet_balance=balance_val,
             currency=wallet_info.get("currency", "đ"),
             last_synced_at=datetime.now(),
             low_balance_warning=is_low,
-            budget_total=float(wallet_info.get("budget_total", 100000.0)),
+            budget_total=float(wallet_info.get("budget_total", 0.0)),
             budget_used=float(wallet_info.get("budget_used", 0.0)),
             budget_remaining=float(wallet_info.get("budget_remaining", balance_val)),
             used_percent=float(wallet_info.get("used_percent", 0.0)),
-            key_masked=wallet_info.get("key_masked", "sk-9r-N1...zz"),
-            status_text=wallet_info.get("status_text", "Bình thường"),
+            key_masked=wallet_info.get("key_masked", "Chưa cấu hình"),
+            status_text=wallet_info.get("status_text", "Chưa cấu hình"),
             models_rates=wallet_info.get("models_rates")
         )
         self._cached_provider_status = status
