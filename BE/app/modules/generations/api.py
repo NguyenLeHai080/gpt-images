@@ -157,7 +157,7 @@ def generate_image(
             "success": True,
             "code": "SUCCESS",
             "message": "Tạo hình ảnh thành công",
-            "data": result.model_dump(),
+            "data": result.model_dump(mode="json"),
             "meta": {
                 "wallet_balance": remaining_balance,
                 "images_remaining": remaining_images,
@@ -294,7 +294,7 @@ async def edit_image(
             }
         )
 
-    return success_response(result.model_dump(), "Chỉnh sửa hình ảnh thành công", status_code=201)
+    return success_response(result.model_dump(mode="json"), "Chỉnh sửa hình ảnh thành công", status_code=201)
 
 @router.get("/models")
 @router.get("/v1/models")
@@ -416,7 +416,7 @@ def get_jobs(
 
     return success_response(
         {
-            "items": [item.model_dump() for item in items],
+            "items": [item.model_dump(mode="json") for item in items],
             "total": total,
             "page": page,
             "page_size": page_size,
@@ -438,7 +438,7 @@ def get_financial_summary(
     if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
         return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền xem dòng tiền và lợi nhuận", status_code=403)
     data = generation_service.get_financial_summary(db)
-    return success_response(data.model_dump(), "Lấy báo cáo tài chính và dòng tiền thành công")
+    return success_response(data.model_dump(mode="json"), "Lấy báo cáo tài chính và dòng tiền thành công")
 
 @router.get("/generations/provider-status")
 def get_provider_status(
@@ -452,7 +452,7 @@ def get_provider_status(
     if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
         return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền xem trạng thái nhà cung cấp", status_code=403)
     data = generation_service.get_provider_status()
-    return success_response(data.model_dump(), "Lấy trạng thái AI Cluster Engine thành công")
+    return success_response(data.model_dump(mode="json"), "Lấy trạng thái AI Cluster Engine thành công")
 
 @router.post("/generations/provider-sync")
 def sync_provider(
@@ -466,7 +466,7 @@ def sync_provider(
     if not user or user.role not in ["SUPER_ADMIN", "ADMIN"]:
         return error_response("FORBIDDEN", "Chỉ quản trị viên mới có quyền đồng bộ nhà cung cấp", status_code=403)
     data = generation_service.get_provider_status(force_refresh=True)
-    return success_response(data.model_dump(), "Đồng bộ thành công số dư từ AI Cluster Engine")
+    return success_response(data.model_dump(mode="json"), "Đồng bộ thành công số dư từ AI Cluster Engine")
 
 @router.get("/system/maintenance")
 def get_system_maintenance(db: Session = Depends(get_db)):
@@ -587,7 +587,7 @@ def update_job(
     updated = generation_service.update_job(db, job_id, payload.prompt, user)
     if not updated:
         return error_response("NOT_FOUND", "Không tìm thấy job hoặc bạn không có quyền sửa", status_code=404)
-    return success_response(updated.model_dump(), "Cập nhật job thành công")
+    return success_response(updated.model_dump(mode="json"), "Cập nhật job thành công")
 
 @router.get("/generations/jobs/{job_id}/image")
 def get_job_image(
