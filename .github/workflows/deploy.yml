@@ -23,7 +23,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST || '221.121.1.3' }}
           username: ${{ secrets.SSH_USER || 'root' }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          password: ${{ secrets.SSH_PASSWORD || '4fT0R%GUJgh@a9Vw' }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script_stop: true
