@@ -514,7 +514,6 @@ export const StudioPage: React.FC = () => {
             setPage(1);
           },
           pageSizeOptions: [8, 16, 25, 50],
-          serverSide: true,
         }}
       />
 

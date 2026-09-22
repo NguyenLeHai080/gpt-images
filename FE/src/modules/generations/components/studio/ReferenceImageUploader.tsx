@@ -11,13 +11,19 @@ import { generationsApi } from '../../api';
 import { alert } from '../../../../core/alert';
 
 interface ReferenceImageUploaderProps {
-  referenceUrl: string;
-  onChange: (url: string) => void;
+  referenceUrl?: string;
+  onChange?: (url: string) => void;
+  referenceUrls?: string[];
+  onChangeUrls?: (urls: string[] | ((prev: string[]) => string[])) => void;
+  maxImages?: number;
 }
 
 export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
-  referenceUrl,
-  onChange,
+  referenceUrl = '',
+  onChange = () => {},
+  referenceUrls,
+  onChangeUrls,
+  maxImages = 5,
 }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [isDragging, setIsDragging] = useState(false);
@@ -27,15 +33,24 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
   const [showLightbox, setShowLightbox] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const effectiveRefUrl = referenceUrl || (referenceUrls && referenceUrls.length > 0 ? referenceUrls[0] : '');
+
+  const handleValueChange = (url: string) => {
+    onChange(url);
+    if (onChangeUrls) {
+      onChangeUrls(url ? [url] : []);
+    }
+  };
+
   // Sync state if referenceUrl already has a value initially
   useEffect(() => {
-    if (referenceUrl && !localPreview) {
-      setLocalPreview(referenceUrl);
-      if (!referenceUrl.startsWith('data:') && !referenceUrl.includes('/static/uploads/')) {
+    if (effectiveRefUrl && !localPreview) {
+      setLocalPreview(effectiveRefUrl);
+      if (!effectiveRefUrl.startsWith('data:') && !effectiveRefUrl.includes('/static/uploads/')) {
         setActiveTab('url');
       }
     }
-  }, [referenceUrl]);
+  }, [effectiveRefUrl]);
 
   // Format file size
   const formatBytes = (bytes: number) => {
@@ -70,7 +85,7 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
       const res = await generationsApi.uploadImage(file);
       if (res.success && res.data) {
         // Dùng URL đã được lưu trên backend
-        onChange(res.data.url);
+        handleValueChange(res.data.url);
         // Có thể lưu base64 hoặc url
         setLocalPreview(res.data.url || res.data.base64 || objectUrl);
       } else {
@@ -78,7 +93,7 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
         const reader = new FileReader();
         reader.onload = () => {
           const b64 = reader.result as string;
-          onChange(b64);
+          handleValueChange(b64);
           setLocalPreview(b64);
         };
         reader.readAsDataURL(file);
@@ -88,7 +103,7 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
       const reader = new FileReader();
       reader.onload = () => {
         const b64 = reader.result as string;
-        onChange(b64);
+        handleValueChange(b64);
         setLocalPreview(b64);
       };
       reader.readAsDataURL(file);
@@ -140,7 +155,7 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
   const handleRemoveImage = () => {
     setLocalPreview(null);
     setFileInfo(null);
-    onChange('');
+    handleValueChange('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -303,7 +318,7 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
               value={referenceUrl.startsWith('data:') ? '' : referenceUrl}
               onChange={(e) => {
                 const val = e.target.value.trim();
-                onChange(val);
+                handleValueChange(val);
                 setLocalPreview(val || null);
                 setFileInfo(val ? { name: 'Ảnh từ URL trực tuyến', size: 'URL ngoài' } : null);
               }}
