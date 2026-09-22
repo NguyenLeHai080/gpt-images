@@ -19,9 +19,11 @@ export interface JobLogItem {
   image_url?: string;
   error_message?: string;
   latency_ms: number;
+  provider_name?: string;
   cost_provider?: number;    // 75đ trả NCC (0đ nếu Cache, chỉ admin thấy)
   charged_customer: number;  // 150đ thu từ khách
   profit?: number;           // 75đ lời gộp (+150đ nếu Cache, chỉ admin thấy)
+  retry_count?: number;
   created_at: string;
 }
 

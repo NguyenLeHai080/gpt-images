@@ -1,3 +1,5 @@
+import os
+import base64
 import json
 import uuid
 import time
@@ -72,8 +74,10 @@ class GenerationService:
                 return
             user = db.query(User).filter(User.id == user_id).first()
             wallet = db.query(Wallet).filter(Wallet.user_id == user_id).first()
+            is_admin = bool(user and user.role in ("SUPER_ADMIN", "ADMIN"))
 
-            status_code, resp_data, latency_ms = provider_client.generate_image_upstream(
+            status_code, resp_data, latency_ms, used_provider_name, used_provider_cost = provider_client.generate_image_with_failover(
+                db=db,
                 prompt=request.prompt,
                 model=request.model,
                 aspect_ratio=mapped_ar,
@@ -83,9 +87,15 @@ class GenerationService:
                 references=ref_list if ref_list else None,
                 count=request.count,
                 execution_mode="sync",
-                provider_key=user_provider_key
+                user_provider_key=user_provider_key
             )
             job.latency_ms = latency_ms
+            job.provider_name = used_provider_name
+            if used_provider_cost and used_provider_cost > 0:
+                cost_amount = float(used_provider_cost) * request.count
+                profit_amount = required_amount - cost_amount
+                job.cost_provider = cost_amount
+                job.profit = -cost_amount if is_admin else profit_amount
 
             if status_code in (200, 201) and "error" not in resp_data:
                 gen_data = resp_data.get("generation", resp_data)
@@ -109,17 +119,22 @@ class GenerationService:
                 elif "url" in gen_data:
                     image_url = gen_data["url"]
 
-                if image_url and image_url.startswith("data:image/"):
+                if image_url and (image_url.startswith("data:image/") or (not image_url.startswith("http://") and not image_url.startswith("https://") and not image_url.startswith("/static/uploads/"))):
                     try:
                         gen_dir = os.path.join(settings.UPLOAD_DIR, "generated")
                         os.makedirs(gen_dir, exist_ok=True)
-                        header, b64_part = image_url.split(",", 1)
-                        mime = header.split(";")[0].replace("data:", "")
-                        ext = ".png" if "png" in mime else (".webp" if "webp" in mime else ".jpg")
+                        if image_url.startswith("data:image/"):
+                            header, b64_part = image_url.split(",", 1)
+                            mime = header.split(";")[0].replace("data:", "")
+                            ext = ".png" if "png" in mime else (".webp" if "webp" in mime else ".jpg")
+                            img_data = base64.b64decode(b64_part)
+                        else:
+                            ext = ".png"
+                            img_data = base64.b64decode(image_url)
                         saved_filename = f"{job.id}{ext}"
                         saved_path = os.path.join(gen_dir, saved_filename)
                         with open(saved_path, "wb") as f_b64:
-                            f_b64.write(base64.b64decode(b64_part))
+                            f_b64.write(img_data)
                         image_url = f"/static/uploads/generated/{saved_filename}"
                     except Exception as save_err:
                         print(f"[GenerationService] Warning saving base64 image: {save_err}")
@@ -147,7 +162,16 @@ class GenerationService:
                         print(f"[GenerationService] Warning caching remote async image: {dl_err}")
 
                 if not image_url:
-                    image_url = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=80"
+                    job.status = "FAILED"
+                    job.error_message = "Nhà cung cấp không trả về hình ảnh hợp lệ (hoặc yêu cầu chỉnh sửa ảnh bị từ chối)."
+                    job.error_code = "NO_VALID_IMAGE"
+                    job.raw_response = str(resp_data)[:1000]
+                    job.charged_customer = 0.0
+                    job.cost_provider = 0.0
+                    job.profit = 0.0
+                    db.commit()
+                    print(f"[AsyncGeneration] Job {job_id} không có ảnh hợp lệ -> Đã chuyển sang FAILED")
+                    return
 
                 # Trích xuất usage tokens
                 usage = resp_data.get("usage", {})
@@ -176,19 +200,7 @@ class GenerationService:
                     if provider_client.custom_budget_total and provider_client.custom_budget_total > 0:
                         provider_client.custom_budget_total = max(0.0, provider_client.custom_budget_total - cost_amount)
 
-                if not request.no_cache and image_url:
-                    prompt_cache.set(
-                        db=db,
-                        key=cache_key,
-                        prompt=request.prompt,
-                        model=request.model,
-                        aspect_ratio=mapped_ar,
-                        resolution=mapped_res,
-                        quality=mapped_qual,
-                        image_url=image_url,
-                        provider_task_id=provider_task_id,
-                        references=ref_list
-                    )
+# Đã tắt lưu prompt cache
 
                 if user:
                     activity_cost = cost_amount if is_admin else required_amount
@@ -337,106 +349,74 @@ class GenerationService:
         )
         mapped_qual = provider_client.normalize_quality(getattr(request, 'quality', 'medium'))
         
-        # Chuẩn hóa reference / references / sourceImages
-        ref_list = []
-        if getattr(request, 'sourceImages', None) and isinstance(request.sourceImages, list):
-            ref_list.extend([str(r).strip() for r in request.sourceImages if r and str(r).strip()])
-        if getattr(request, 'source_images', None) and isinstance(request.source_images, list):
-            ref_list.extend([str(r).strip() for r in request.source_images if r and str(r).strip()])
-        if request.references and isinstance(request.references, list):
-            ref_list.extend([str(r).strip() for r in request.references if r and str(r).strip()])
-        if request.reference and isinstance(request.reference, str) and request.reference.strip() and request.reference.strip() not in ref_list:
-            ref_list.append(request.reference.strip())
-        
-        # Nếu có ảnh tham chiếu (Image-to-Image), bỏ qua cache để luôn sinh ảnh mới theo ảnh mẫu của khách
+        # Chuẩn hóa reference / references / sourceImages / image / images / image_url / prompt URL
+        ref_list: List[str] = []
+
+        def _collect_ref(item: Any):
+            if not item:
+                return
+            if isinstance(item, str):
+                s = item.strip()
+                if s and s not in ref_list:
+                    ref_list.append(s)
+            elif isinstance(item, list):
+                for sub in item:
+                    _collect_ref(sub)
+            elif isinstance(item, dict):
+                u = item.get("url") or item.get("image_url") or item.get("b64_json")
+                if isinstance(u, dict):
+                    u = u.get("url")
+                if u and str(u).strip():
+                    _collect_ref(str(u).strip())
+
+        # 1. Duyệt toàn bộ các trường ảnh tham chiếu có thể có từ request
+        for attr in [
+            "reference", "references",
+            "sourceImages", "source_images",
+            "image", "images",
+            "image_url", "imageUrl", "image_urls",
+            "input_image", "input_images",
+            "ref", "ref_image", "ref_images",
+            "file", "files"
+        ]:
+            val = getattr(request, attr, None)
+            if val is not None:
+                _collect_ref(val)
+
+        # 2. Kiểm tra các trường mở rộng nếu client gửi key tùy biến
+        if hasattr(request, "__pydantic_extra__") and request.__pydantic_extra__:
+            for k, val in request.__pydantic_extra__.items():
+                if any(x in k.lower() for x in ["image", "ref", "file", "source"]):
+                    _collect_ref(val)
+
+        # 3. Tự động nhận diện ảnh tham chiếu nếu khách gửi URL trong prompt
+        if not ref_list and request.prompt:
+            import re
+            url_pattern = r'https?://[^\s<>"]+'
+            found_urls = re.findall(url_pattern, request.prompt)
+            for u in found_urls:
+                u_clean = u.rstrip('.,;!?)]}')
+                u_lower = u_clean.lower()
+                is_img = any(sig in u_lower for sig in [
+                    ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp",
+                    "imagedelivery.net", "format=jpeg", "format=png", "format=webp",
+                    "/uploads/", "/images/", "/generated/", "cloudinary", "imgur"
+                ])
+                if is_img and u_clean not in ref_list:
+                    ref_list.append(u_clean)
+                    # Loại bỏ URL khỏi prompt để không làm rối model upstream
+                    cleaned = request.prompt.replace(u, "").strip()
+                    if len(cleaned) > 3:
+                        request.prompt = cleaned
+
+        # Nếu có ảnh tham chiếu (Image-to-Image), bắt buộc chuyển mode = edit và không cache
         if ref_list:
+            request.mode = "edit"
             request.no_cache = True
         
-        # 2. KIỂM TRA SMART CACHE (Khóa SHA-256)
-        cache_key = compute_cache_key(
-            model=request.model,
-            prompt=request.prompt,
-            aspect_ratio=mapped_ar,
-            resolution=mapped_res,
-            references=ref_list,
-            quality=mapped_qual
-        )
-
-        if not request.force_refresh and not request.no_cache:
-            cached_data = prompt_cache.get(db, cache_key)
-            if cached_data and cached_data.get("image_url"):
-                # === CACHE HIT: PHẢN HỒI SIÊU TỐC, TIẾT KIỆM 100% VỐN NCC ===
-                cached_charged = 0.0 if is_admin else required_amount
-                cached_profit = 0.0 if is_admin else required_amount
-                cached_job = ImageGenerationJob(
-                    id=job_id,
-                    user_id=user.id,
-                    api_key_id=api_key.id if api_key else None,
-                    prompt=request.prompt,
-                    model=request.model,
-                    aspect_ratio=mapped_ar,
-                    resolution=mapped_res,
-                    quality=mapped_qual,
-                    reference=ref_list[0] if ref_list else None,
-                    references=json.dumps(ref_list) if ref_list else None,
-                    count=request.count,
-                    execution_mode=request.executionMode,
-                    status="SUCCEEDED",
-                    is_cached=True,
-                    image_url=cached_data["image_url"],
-                    provider_task_id=cached_data.get("provider_task_id") or "cache_hit",
-                    provider_generation_id=cached_data.get("provider_task_id") or "cache_hit",
-                    cost_provider=0.0,            # 0đ vốn trả NCC!
-                    charged_customer=cached_charged, # Thu tiền từ khách hoặc 0đ nếu Super Admin
-                    profit=cached_profit,
-                    latency_ms=25,
-                    created_at=datetime.now()
-                )
-                db.add(cached_job)
-
-                # Chỉ trừ ví khách hàng MEMBER
-                if not is_admin and wallet:
-                    wallet.balance -= required_amount
-                    wallet.api_spent += required_amount
-
-                activity = ApiActivityLog(
-                    id=f"act_{uuid.uuid4().hex[:12]}",
-                    user_name=user.full_name or user.email,
-                    model_name=f"{request.model} [⚡ Cache]" + (" [Admin]" if is_admin else ""),
-                    status="success",
-                    cost=cached_charged,
-                    cost_display=f"{cached_charged:,.0f} đ" if not is_admin else "0 đ (Admin Cache)",
-                    created_at=datetime.now()
-                )
-                db.add(activity)
-                db.commit()
-
-                formatted_cached_url = self._format_job_image_url(cached_job.id, cached_job.image_url)
-                cached_created_ts = int(cached_job.created_at.timestamp()) if cached_job.created_at else int(time.time())
-                cached_openai_data = [{"url": formatted_cached_url, "revised_prompt": cached_job.prompt}] if formatted_cached_url else []
-
-                return ImageGenerationResponse(
-                    job_id=cached_job.id,
-                    status="SUCCEEDED",
-                    prompt=cached_job.prompt,
-                    model=cached_job.model,
-                    aspect_ratio=cached_job.aspect_ratio,
-                    resolution=cached_job.resolution or "1k",
-                    quality=cached_job.quality or "medium",
-                    reference=cached_job.reference,
-                    references=ref_list if ref_list else None,
-                    image_url=formatted_cached_url,
-                    provider_task_id=cached_job.provider_task_id,
-                    charged_amount=required_amount,
-                    currency="VND",
-                    latency_ms=cached_job.latency_ms,
-                    is_cached=True,
-                    created_at=to_utc(cached_job.created_at),
-                    created=cached_created_ts,
-                    data=cached_openai_data,
-                    error_message=None
-                )
-
+        # 2. Tạo ảnh mới 100% từ Nhà Cung Cấp (Đã tắt hoàn toàn Prompt Cache)
+        cache_key = f"nocache_{uuid.uuid4().hex[:12]}"
+        
         # 3. Khởi tạo Job trong Database (Cache Miss / Force Refresh)
         job = ImageGenerationJob(
             id=job_id,
@@ -509,7 +489,8 @@ class GenerationService:
                 error_message=None
             )
 
-        status_code, resp_data, latency_ms = provider_client.generate_image_upstream(
+        status_code, resp_data, latency_ms, used_provider_name, used_provider_cost = provider_client.generate_image_with_failover(
+            db=db,
             prompt=request.prompt,
             model=request.model,
             aspect_ratio=mapped_ar,
@@ -519,10 +500,16 @@ class GenerationService:
             references=ref_list if ref_list else None,
             count=request.count,
             execution_mode=request.executionMode,
-            provider_key=user_provider_key
+            user_provider_key=user_provider_key
         )
 
         job.latency_ms = latency_ms
+        job.provider_name = used_provider_name
+        if used_provider_cost and used_provider_cost > 0:
+            cost_amount = float(used_provider_cost) * request.count
+            profit_amount = required_amount - cost_amount
+            job.cost_provider = cost_amount
+            job.profit = -cost_amount if is_admin else profit_amount
 
 
         # 4. Phân tích kết quả upstream
@@ -550,17 +537,22 @@ class GenerationService:
             elif "url" in gen_data:
                 image_url = gen_data["url"]
             
-            if image_url and image_url.startswith("data:image/"):
+            if image_url and (image_url.startswith("data:image/") or (not image_url.startswith("http://") and not image_url.startswith("https://") and not image_url.startswith("/static/uploads/"))):
                 try:
                     gen_dir = os.path.join(settings.UPLOAD_DIR, "generated")
                     os.makedirs(gen_dir, exist_ok=True)
-                    header, b64_part = image_url.split(",", 1)
-                    mime = header.split(";")[0].replace("data:", "")
-                    ext = ".png" if "png" in mime else (".webp" if "webp" in mime else ".jpg")
+                    if image_url.startswith("data:image/"):
+                        header, b64_part = image_url.split(",", 1)
+                        mime = header.split(";")[0].replace("data:", "")
+                        ext = ".png" if "png" in mime else (".webp" if "webp" in mime else ".jpg")
+                        img_data = base64.b64decode(b64_part)
+                    else:
+                        ext = ".png"
+                        img_data = base64.b64decode(image_url)
                     saved_filename = f"{job.id}{ext}"
                     saved_path = os.path.join(gen_dir, saved_filename)
                     with open(saved_path, "wb") as f_b64:
-                        f_b64.write(base64.b64decode(b64_part))
+                        f_b64.write(img_data)
                     image_url = f"/static/uploads/generated/{saved_filename}"
                 except Exception as save_err:
                     print(f"[GenerationService] Warning saving base64 image: {save_err}")
@@ -588,8 +580,33 @@ class GenerationService:
                     print(f"[GenerationService] Warning caching remote sync image: {dl_err}")
 
             if not image_url:
-                # Fallback preview demo image if provider returns generation ID without public CDN URL
-                image_url = f"https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1024&q=80"
+                job.status = "FAILED"
+                job.error_message = "Nhà cung cấp không trả về hình ảnh hợp lệ (hoặc yêu cầu chỉnh sửa ảnh bị từ chối)."
+                job.error_code = "NO_VALID_IMAGE"
+                job.raw_response = str(resp_data)[:1000]
+                job.charged_customer = 0.0
+                job.cost_provider = 0.0
+                job.profit = 0.0
+                db.commit()
+                return ImageGenerationResponse(
+                    job_id=job.id,
+                    status="FAILED",
+                    prompt=job.prompt,
+                    model=job.model,
+                    aspect_ratio=job.aspect_ratio,
+                    resolution=job.resolution or "1k",
+                    quality=job.quality or "medium",
+                    reference=job.reference,
+                    references=ref_list if ref_list else None,
+                    image_url=None,
+                    provider_task_id=None,
+                    charged_amount=0.0,
+                    currency="VND",
+                    latency_ms=latency_ms,
+                    is_cached=False,
+                    created_at=to_utc(job.created_at),
+                    error_message=job.error_message
+                )
 
             # Trích xuất usage tokens
             usage = resp_data.get("usage", {})
@@ -616,20 +633,7 @@ class GenerationService:
                 if provider_client.custom_budget_total and provider_client.custom_budget_total > 0:
                     provider_client.custom_budget_total = max(0.0, provider_client.custom_budget_total - cost_amount)
 
-            # Lưu vào Smart Cache nếu không tắt cache
-            if not request.no_cache and image_url:
-                prompt_cache.set(
-                    db=db,
-                    key=cache_key,
-                    prompt=request.prompt,
-                    model=request.model,
-                    aspect_ratio=mapped_ar,
-                    resolution=mapped_res,
-                    quality=mapped_qual,
-                    image_url=image_url,
-                    provider_task_id=provider_task_id,
-                    references=ref_list
-                )
+# Đã tắt lưu prompt cache
 
             # Ghi nhận activity log
             act_cost = cost_amount if is_admin else required_amount
@@ -752,14 +756,18 @@ class GenerationService:
             user_item = users_map.get(j.user_id)
             api_key_item = keys_map.get(j.api_key_id)
 
-            key_name = api_key_item.name if api_key_item else "MintForge_Gateway_Auto"
-            raw_prefix = api_key_item.key_prefix if api_key_item else "sk-HJMEUHF"
-            if raw_prefix and len(raw_prefix) >= 8:
-                masked_key = f"{raw_prefix[:4]}••••••{raw_prefix[-4:]}"
-            elif raw_prefix and len(raw_prefix) >= 4:
-                masked_key = f"{raw_prefix[:4]}••••••"
+            if api_key_item:
+                key_name = api_key_item.name
+                raw_prefix = api_key_item.key_prefix or ""
+                if len(raw_prefix) >= 8:
+                    masked_key = f"{raw_prefix[:4]}••••••{raw_prefix[-4:]}"
+                elif len(raw_prefix) >= 4:
+                    masked_key = f"{raw_prefix[:4]}••••••"
+                else:
+                    masked_key = "••••••••"
             else:
-                masked_key = "sk-H••••••EUHF"
+                key_name = "Giao diện Web"
+                masked_key = "Web Studio / Direct"
 
             token_in = 0
             token_out = 0
@@ -796,13 +804,15 @@ class GenerationService:
                     reference=j.reference,
                     references=json.loads(j.references) if (j.references and str(j.references).startswith("[")) else ([j.reference] if j.reference else None),
                     status=j.status,
-                    is_cached=getattr(j, 'is_cached', False) or False,
+                    is_cached=(getattr(j, 'is_cached', False) or False) if is_admin else False,
                     image_url=self._format_job_image_url(j.id, j.image_url),
                     error_message=j.error_message,
-                    latency_ms=j.latency_ms,
+                    latency_ms=j.latency_ms if (is_admin or not getattr(j, 'is_cached', False)) else 850,
+                    provider_name=j.provider_name or ("⚡ Cache" if getattr(j, "is_cached", False) else (None if j.status == "FAILED" else "Nhà Cung Cấp 01")) if is_admin else (None if j.status == "FAILED" else "Nhà Cung Cấp 01"),
                     cost_provider=j.cost_provider if is_admin else None,
                     charged_customer=j.charged_customer,
                     profit=j.profit if is_admin else None,
+                    retry_count=getattr(j, "retry_count", 0) or 0,
                     created_at=to_utc(j.created_at)
                 )
             )
@@ -978,14 +988,148 @@ class GenerationService:
             reference=job.reference,
             references=json.loads(job.references) if (job.references and str(job.references).startswith("[")) else ([job.reference] if job.reference else None),
             status=job.status,
-            is_cached=getattr(job, 'is_cached', False) or False,
+            is_cached=(getattr(job, 'is_cached', False) or False) if is_admin else False,
             image_url=self._format_job_image_url(job.id, job.image_url),
             error_message=job.error_message,
-            latency_ms=job.latency_ms,
+            latency_ms=job.latency_ms if (is_admin or not getattr(job, 'is_cached', False)) else 850,
+            provider_name=job.provider_name or ("⚡ Cache" if getattr(job, "is_cached", False) else (None if job.status == "FAILED" else "Nhà Cung Cấp 01")) if is_admin else (None if job.status == "FAILED" else "Nhà Cung Cấp 01"),
             cost_provider=job.cost_provider if is_admin else None,
             charged_customer=job.charged_customer,
             profit=job.profit if is_admin else None,
-            created_at=job.created_at
+            retry_count=getattr(job, "retry_count", 0) or 0,
+            created_at=to_utc(job.created_at)
         )
+
+    def retry_job(self, db: Session, job_id: str, current_user: User) -> Optional[JobLogItem]:
+        """
+        Thực hiện thử lại (Retry) một Job bị FAILED hoặc gặp sự cố
+        """
+        is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
+        query = db.query(ImageGenerationJob).filter(ImageGenerationJob.id == job_id)
+        if not is_admin:
+            query = query.filter(ImageGenerationJob.user_id == current_user.id)
+
+        job = query.first()
+        if not job:
+            return None
+
+        if job.status == "PROCESSING":
+            raise HTTPException(status_code=400, detail="Job đang trong tiến trình xử lý, vui lòng chờ hoàn tất")
+
+        prov_cost_unit, cust_price_unit, _ = pricing_service.get_model_financials(db, job.model)
+        required_amount = cust_price_unit * (job.count or 1)
+        cost_amount = prov_cost_unit * (job.count or 1)
+        profit_amount = (cust_price_unit - prov_cost_unit) * (job.count or 1)
+
+        wallet = db.query(Wallet).filter(Wallet.user_id == job.user_id).first()
+        if not is_admin:
+            if not wallet or wallet.balance < required_amount:
+                raise HTTPException(
+                    status_code=402,
+                    detail=f"Số dư tài khoản không đủ ({getattr(wallet, 'balance', 0):,.0f} đ). Cần tối thiểu {required_amount:,.0f} đ để thử lại."
+                )
+
+        job.retry_count = (getattr(job, "retry_count", 0) or 0) + 1
+        job.status = "PROCESSING"
+        job.error_message = None
+        job.error_code = None
+        job.raw_response = None
+        job.updated_at = datetime.now()
+        db.commit()
+        db.refresh(job)
+
+        ref_list = []
+        if job.references:
+            try:
+                parsed = json.loads(job.references)
+                if isinstance(parsed, list):
+                    ref_list = [str(r) for r in parsed if r]
+            except Exception:
+                pass
+        if not ref_list and job.reference:
+            ref_list = [job.reference]
+
+        req_obj = ImageGenerationRequest(
+            prompt=job.prompt,
+            model=job.model,
+            aspect_ratio=job.aspect_ratio,
+            resolution=job.resolution or "1k",
+            quality=job.quality or "medium",
+            reference=job.reference,
+            references=ref_list if ref_list else None,
+            count=job.count or 1,
+            executionMode="async",
+            no_cache=True
+        )
+
+        user_item = db.query(User).filter(User.id == job.user_id).first()
+        user_provider_key = user_item.provider_api_key if user_item and user_item.provider_api_key else None
+        cache_key = f"retry_{uuid.uuid4().hex[:12]}"
+
+        import threading
+        thread = threading.Thread(
+            target=self._run_async_generation,
+            args=(
+                job.id,
+                job.user_id,
+                job.api_key_id,
+                req_obj,
+                job.aspect_ratio,
+                job.resolution or "1k",
+                job.quality or "medium",
+                ref_list,
+                cache_key,
+                required_amount,
+                cost_amount,
+                profit_amount,
+                user_provider_key
+            ),
+            daemon=True
+        )
+        thread.start()
+
+        api_key_item = db.query(ApiKey).filter(ApiKey.id == job.api_key_id).first() if job.api_key_id else None
+
+        return JobLogItem(
+            id=job.id,
+            user_id=job.user_id,
+            user_name=user_item.full_name if user_item else "Khách vãng lai",
+            user_email=user_item.email if user_item else "N/A",
+            api_key_name=api_key_item.name if api_key_item else "Direct Web Client",
+            prompt=job.prompt,
+            model=job.model,
+            aspect_ratio=job.aspect_ratio,
+            resolution=job.resolution or "1k",
+            quality=job.quality or "medium",
+            reference=job.reference,
+            references=ref_list if ref_list else None,
+            status=job.status,
+            is_cached=False,
+            image_url=None,
+            error_message=None,
+            latency_ms=0,
+            provider_name=job.provider_name or "Nhà Cung Cấp 01",
+            cost_provider=cost_amount if is_admin else None,
+            charged_customer=job.charged_customer,
+            profit=profit_amount if is_admin else None,
+            retry_count=job.retry_count,
+            created_at=to_utc(job.created_at)
+        )
+
+    def batch_retry_jobs(self, db: Session, job_ids: List[str], current_user: User) -> int:
+        """
+        Thực hiện thử lại hàng loạt các jobs
+        """
+        if not job_ids:
+            return 0
+        retried = 0
+        for jid in job_ids:
+            try:
+                res = self.retry_job(db, jid, current_user)
+                if res:
+                    retried += 1
+            except Exception as e:
+                print(f"[GenerationService] Lỗi khi retry job {jid}: {e}")
+        return retried
 
 generation_service = GenerationService()

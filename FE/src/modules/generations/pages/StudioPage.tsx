@@ -9,6 +9,7 @@ import {
   Search,
   Image as ImageIcon,
   XCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '../../../core/components/Button/Button';
 import { Badge } from '../../../core/components/Badge/Badge';
@@ -36,6 +37,7 @@ export const StudioPage: React.FC = () => {
   const [selectedJobDetail, setSelectedJobDetail] = useState<JobLogItem | null>(null);
   const [editingJob, setEditingJob] = useState<JobLogItem | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   // Batch Selection State
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -44,14 +46,19 @@ export const StudioPage: React.FC = () => {
   // Hook quản lý jobs
   const {
     jobs,
+    total,
     isLoading,
     statusFilter,
     setStatusFilter,
     searchQuery,
     setSearchQuery,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
     userStats,
     refetch,
-  } = useJobs(isAdmin);
+  } = useJobs(isAdmin, 8);
 
   // Xóa 1 job
   const handleDeleteJob = async (jobId: string) => {
@@ -101,6 +108,38 @@ export const StudioPage: React.FC = () => {
       } finally {
         setIsBatchOperating(false);
       }
+    }
+  };
+
+  // Thử lại 1 job bị lỗi
+  const handleRetryJob = async (jobId: string) => {
+    setRetryingId(jobId);
+    try {
+      const res = await generationsApi.retryJob(jobId);
+      if (res.success) {
+        refetch(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  // Thử lại hàng loạt jobs
+  const handleBatchRetry = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setIsBatchOperating(true);
+    try {
+      const res = await generationsApi.batchRetryJobs(selectedRowKeys);
+      if (res.success) {
+        setSelectedRowKeys([]);
+        refetch(true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsBatchOperating(false);
     }
   };
 
@@ -221,16 +260,16 @@ export const StudioPage: React.FC = () => {
           return (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 shadow-2xs whitespace-nowrap animate-pulse">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-              Đang xử lý...
+              {record.retry_count && record.retry_count > 0 ? `Đang thử lại (${record.retry_count})...` : 'Đang xử lý...'}
             </span>
           );
         }
         const variant = v === 'SUCCEEDED' ? 'success' : 'danger';
-        const label = v === 'SUCCEEDED' ? 'Thành công' : 'Thất bại';
+        const label = v === 'SUCCEEDED' ? 'Thành công' : record.retry_count && record.retry_count > 0 ? `Thất bại (${record.retry_count} lần thử)` : 'Thất bại';
         return (
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <Badge variant={variant}>{label}</Badge>
-            {record.is_cached && (
+            {isAdmin && record.is_cached && (
               <span
                 className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap"
                 title="Phục vụ tức thì từ Smart Cache (0đ vốn NCC)"
@@ -247,8 +286,8 @@ export const StudioPage: React.FC = () => {
       title: 'Độ Trễ',
       dataIndex: 'latency_ms',
       render: (val, record) => (
-        <span className={`font-mono text-xs whitespace-nowrap ${record.is_cached ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
-          {record.is_cached ? '⚡ 25ms' : Number(val) > 0 ? `${(Number(val) / 1000).toFixed(1)}s` : '-'}
+        <span className={`font-mono text-xs whitespace-nowrap ${isAdmin && record.is_cached ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+          {isAdmin && record.is_cached ? '⚡ 25ms' : Number(val) > 0 ? `${(Number(val) / 1000).toFixed(1)}s` : (record.is_cached ? '0.8s' : '-')}
         </span>
       ),
     },
@@ -266,6 +305,20 @@ export const StudioPage: React.FC = () => {
       align: 'right',
       render: (_, record) => (
         <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          {/* Icon Thử lại (nếu FAILED) */}
+          {record.status === 'FAILED' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRetryJob(record.id)}
+              disabled={retryingId === record.id}
+              title="Thử lại tạo ảnh ngay"
+              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-2"
+            >
+              <RotateCcw size={14} className={retryingId === record.id ? 'animate-spin' : ''} />
+            </Button>
+          )}
+
           {/* Icon Xem chi tiết */}
           <Button
             variant="ghost"
@@ -400,6 +453,16 @@ export const StudioPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={handleBatchRetry}
+              disabled={isBatchOperating}
+              leftIcon={<RotateCcw size={14} className="text-emerald-400" />}
+              className="border-slate-700 text-slate-200 hover:bg-slate-800 text-xs"
+            >
+              Thử lại ({selectedRowKeys.length})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleBatchCancel}
               disabled={isBatchOperating}
               leftIcon={<XCircle size={14} className="text-amber-400" />}
@@ -441,7 +504,18 @@ export const StudioPage: React.FC = () => {
           onChange: (keys) => setSelectedRowKeys(keys),
         }}
         emptyText="Chưa có job nào được tạo. Hãy bấm '+ Tạo ảnh mới' phía trên để bắt đầu sáng tạo hình ảnh!"
-        pagination={{ pageSize: 8, pageSizeOptions: [8, 16, 25] }}
+        pagination={{
+          currentPage: page,
+          totalItems: total,
+          pageSize: pageSize,
+          onPageChange: (p) => setPage(p),
+          onPageSizeChange: (s) => {
+            setPageSize(s);
+            setPage(1);
+          },
+          pageSizeOptions: [8, 16, 25, 50],
+          serverSide: true,
+        }}
       />
 
       {/* Modal Tạo Ảnh Mới (Mở khi bấm nút + Tạo ảnh mới) */}
@@ -460,6 +534,7 @@ export const StudioPage: React.FC = () => {
         onClose={() => setSelectedJobDetail(null)}
         job={selectedJobDetail}
         isAdmin={isAdmin}
+        onRetrySuccess={() => refetch(true)}
       />
 
       {/* Modal Chỉnh Sửa Job (Mở khi bấm icon Edit) */}

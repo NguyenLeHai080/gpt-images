@@ -6,15 +6,27 @@ class ImageGenerationRequest(BaseModel):
     prompt: str = Field(..., description="Mô tả hình ảnh cần tạo (Prompt)")
     model: str = Field(default="gpt-image-2.5-flare", description="Tên model AI (Mặc định: gpt-image-2.5-flare)")
     modelKey: Optional[str] = Field(default=None)
-    size: Optional[str] = Field(default=None, description="Kích thước pixel theo chuẩn OpenAI (vd: 1024x1024, 1792x1024, 1024x1792, 2048x2048)")
-    aspectRatio: Optional[str] = Field(default=None, description="Tỷ lệ khung hình camelCase (ví dụ: 1024x1024, 2048x2048, 16:9, 9:16)")
-    aspect_ratio: Optional[str] = Field(default=None, description="Tỷ lệ khung hình snake_case (ví dụ: 1:1, 16:9, 9:16, 2048x2048)")
+    size: Optional[str] = Field(default=None, description="Kích thước pixel theo chuẩn OpenAI: 1024x1024 (1:1), 1792x1024 (16:9), 1024x1792 (9:16), 1408x1056 (4:3), 1056x1408 (3:4), 1536x1024 (3:2), 1024x1536 (2:3); 2K: 2048x2048, 3584x2048, 2048x3584; 4K: 4096x4096, 3840x2160, 2160x3840")
+    aspectRatio: Optional[str] = Field(default=None, description="Tỷ lệ khung hình camelCase: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3 hoặc kích thước pixel WIDTHxHEIGHT")
+    aspect_ratio: Optional[str] = Field(default=None, description="Tỷ lệ khung hình snake_case: 1:1, 16:9, 9:16, 4:3, 3:4, 3:2, 2:3 hoặc kích thước pixel WIDTHxHEIGHT")
     resolution: Optional[str] = Field(default="1k", description="Độ phân giải kích thước pixel: 1k, 2k, 4k")
     quality: Optional[str] = Field(default="medium", description="Chất lượng render (Sampling/Denoising Steps): low, medium, high (hoặc standard, hd)")
     reference: Optional[str] = Field(default=None, description="URL hoặc Data URI ảnh tham chiếu đơn lẻ")
     references: Optional[List[str]] = Field(default=None, description="Danh sách URL hoặc Data URI ảnh tham chiếu")
     sourceImages: Optional[List[str]] = Field(default=None, description="Danh sách ảnh nguồn (tương thích NCC / Image-to-Image)")
     source_images: Optional[List[str]] = Field(default=None, description="Danh sách ảnh nguồn snake_case")
+    image: Optional[Any] = Field(default=None, description="URL hoặc base64 ảnh tham chiếu (alias OpenAI / Midjourney / Webhook)")
+    images: Optional[List[Any]] = Field(default=None, description="Danh sách ảnh tham chiếu (alias OpenAI / Midjourney)")
+    image_url: Optional[Any] = Field(default=None, description="URL ảnh tham chiếu (alias OpenAI)")
+    imageUrl: Optional[Any] = Field(default=None, description="URL ảnh tham chiếu camelCase")
+    image_urls: Optional[List[Any]] = Field(default=None, description="Danh sách URL ảnh tham chiếu")
+    input_image: Optional[Any] = Field(default=None, description="Ảnh nguồn đầu vào")
+    input_images: Optional[List[Any]] = Field(default=None, description="Danh sách ảnh nguồn đầu vào")
+    ref: Optional[Any] = Field(default=None, description="Ảnh tham chiếu viết tắt")
+    ref_image: Optional[Any] = Field(default=None, description="Ảnh tham chiếu")
+    ref_images: Optional[List[Any]] = Field(default=None, description="Danh sách ảnh tham chiếu")
+    file: Optional[Any] = Field(default=None, description="File ảnh tham chiếu URL")
+    files: Optional[List[Any]] = Field(default=None, description="Danh sách file ảnh tham chiếu")
     mode: Optional[str] = Field(default="generation", description="Chế độ tạo ảnh (generation hoặc edit)")
     count: int = Field(default=1, ge=1, le=4, description="Số lượng ảnh tạo ra")
     n: Optional[int] = Field(default=None, ge=1, le=4, description="Số lượng ảnh theo chuẩn OpenAI (alias cho count)")
@@ -22,6 +34,9 @@ class ImageGenerationRequest(BaseModel):
     executionMode: str = Field(default="sync", description="Chế độ xử lý: sync hoặc async")
     force_refresh: Optional[bool] = Field(default=False, description="Bỏ qua cache và tạo ảnh mới biến thể")
     no_cache: Optional[bool] = Field(default=False, description="Không dùng cache")
+
+    class Config:
+        extra = "allow"
 
 class ImageGenerationResponse(BaseModel):
     job_id: str
@@ -42,6 +57,7 @@ class ImageGenerationResponse(BaseModel):
     created_at: datetime
     created: Optional[int] = None
     data: Optional[List[Dict[str, Any]]] = None
+    retry_count: Optional[int] = 0
     error_message: Optional[str] = None
 
 class JobLogItem(BaseModel):
@@ -63,8 +79,10 @@ class JobLogItem(BaseModel):
     status: str
     is_cached: bool = False
     image_url: Optional[str] = None
+    retry_count: Optional[int] = 0
     error_message: Optional[str] = None
     latency_ms: int
+    provider_name: Optional[str] = None
     cost_provider: Optional[float] = None
     charged_customer: float = 150.0
     profit: Optional[float] = None
@@ -116,6 +134,9 @@ class ProviderStatus(BaseModel):
 
 class UpdateJobRequest(BaseModel):
     prompt: Optional[str] = Field(None, description="Mô tả prompt cập nhật")
+
+class BatchRetryRequest(BaseModel):
+    job_ids: List[str] = Field(..., description="Danh sách ID các jobs cần thử lại")
 
 class BatchJobActionRequest(BaseModel):
     job_ids: List[str] = Field(..., description="Danh sách ID các jobs cần thao tác")

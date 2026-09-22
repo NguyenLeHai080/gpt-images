@@ -14,7 +14,7 @@ from app.modules.auth.models import User
 from app.modules.billing.models import Wallet
 from app.modules.api_keys.models import ApiKey
 from app.modules.api_keys.services import hash_api_token
-from app.modules.generations.schemas import ImageGenerationRequest, UpdateJobRequest, BatchJobActionRequest, UpdateMaintenanceRequest
+from app.modules.generations.schemas import ImageGenerationRequest, UpdateJobRequest, BatchJobActionRequest, BatchRetryRequest, UpdateMaintenanceRequest
 from app.modules.generations.services import generation_service
 
 router = APIRouter(prefix="", tags=["Image Generation Gateway"])
@@ -202,7 +202,7 @@ async def edit_image(
     model = "gpt-image-2.5-flare"
     size = "1024x1024"
     count = 1
-    ref_image_path = None
+    ref_images_list: List[str] = []
 
     if "multipart/form-data" in content_type:
         form = await request.form()
@@ -216,19 +216,25 @@ async def edit_image(
         except Exception:
             count = 1
 
-        img_field = form.get("image")
-        if img_field and hasattr(img_field, "read"):
-            upload_dir = settings.REFERENCES_UPLOAD_DIR
-            os.makedirs(upload_dir, exist_ok=True)
-            fname = getattr(img_field, "filename", "edit_input.png") or "edit_input.png"
-            ext = os.path.splitext(fname)[1].lower() or ".png"
-            unique_name = f"edit_{uuid.uuid4().hex[:12]}{ext}"
-            ref_image_path = os.path.join(upload_dir, unique_name)
-            file_bytes = await img_field.read()
-            with open(ref_image_path, "wb") as f_out:
-                f_out.write(file_bytes)
-        elif isinstance(img_field, str) and img_field.strip():
-            ref_image_path = img_field.strip()
+        upload_dir = settings.REFERENCES_UPLOAD_DIR
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for fkey in ["image", "images", "file", "files", "reference", "references"]:
+            items = form.getlist(fkey) if hasattr(form, "getlist") else [form.get(fkey)]
+            for it in items:
+                if not it:
+                    continue
+                if hasattr(it, "read"):
+                    fname = getattr(it, "filename", "edit_input.png") or "edit_input.png"
+                    ext = os.path.splitext(fname)[1].lower() or ".png"
+                    unique_name = f"edit_{uuid.uuid4().hex[:12]}{ext}"
+                    saved_path = os.path.join(upload_dir, unique_name)
+                    file_bytes = await it.read()
+                    with open(saved_path, "wb") as f_out:
+                        f_out.write(file_bytes)
+                    ref_images_list.append(saved_path)
+                elif isinstance(it, str) and it.strip() and it.strip() not in ref_images_list:
+                    ref_images_list.append(it.strip())
     else:
         try:
             body = await request.json()
@@ -243,7 +249,23 @@ async def edit_image(
             count = int(body.get("n") or body.get("count") or 1)
         except Exception:
             count = 1
-        ref_image_path = body.get("image") or body.get("reference")
+
+        for k in ["image", "images", "reference", "references", "image_url", "imageUrl", "sourceImages", "source_images", "input_image", "input_images"]:
+            v = body.get(k)
+            if isinstance(v, list):
+                for item in v:
+                    if isinstance(item, str) and item.strip() and item.strip() not in ref_images_list:
+                        ref_images_list.append(item.strip())
+                    elif isinstance(item, dict):
+                        u = item.get("url") or item.get("image_url")
+                        if u and str(u).strip() and str(u).strip() not in ref_images_list:
+                            ref_images_list.append(str(u).strip())
+            elif isinstance(v, str) and v.strip() and v.strip() not in ref_images_list:
+                ref_images_list.append(v.strip())
+            elif isinstance(v, dict):
+                u = v.get("url") or v.get("image_url")
+                if u and str(u).strip() and str(u).strip() not in ref_images_list:
+                    ref_images_list.append(str(u).strip())
 
     if not prompt:
         return error_response("VALIDATION_ERROR", "Thiếu trường 'prompt' mô tả nội dung chỉnh sửa", status_code=422)
@@ -251,7 +273,8 @@ async def edit_image(
     gen_payload = ImageGenerationRequest(
         prompt=prompt,
         model=model,
-        reference=ref_image_path,
+        reference=ref_images_list[0] if ref_images_list else None,
+        references=ref_images_list if ref_images_list else None,
         size=size,
         resolution=resolution,
         quality=quality,
@@ -589,7 +612,7 @@ def update_job(
         return error_response("NOT_FOUND", "Không tìm thấy job hoặc bạn không có quyền sửa", status_code=404)
     return success_response(updated.model_dump(mode="json"), "Cập nhật job thành công")
 
-@router.get("/generations/jobs/{job_id}/image")
+@router.api_route("/generations/jobs/{job_id}/image", methods=["GET", "HEAD"])
 def get_job_image(
     job_id: str,
     db: Session = Depends(get_db)
@@ -666,6 +689,17 @@ def get_job_image(
             header, b64data = img_url.split(",", 1)
             media_type = header.split(";")[0].replace("data:", "") or "image/png"
             image_bytes = base64.b64decode(b64data)
+            try:
+                gen_dir = os.path.join(settings.UPLOAD_DIR, "generated")
+                os.makedirs(gen_dir, exist_ok=True)
+                ext = ".png" if "png" in media_type else ".jpg"
+                saved_path = os.path.join(gen_dir, f"{job_id}{ext}")
+                with open(saved_path, "wb") as f_out:
+                    f_out.write(image_bytes)
+                job.image_url = f"/static/uploads/generated/{job_id}{ext}"
+                db.commit()
+            except Exception:
+                pass
             return Response(
                 content=image_bytes,
                 media_type=media_type,
@@ -676,6 +710,31 @@ def get_job_image(
             )
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Lỗi giải mã ảnh: {str(e)}")
+
+    # Nếu là raw base64 (OpenAI b64_json không có tiền tố data:image/)
+    try:
+        image_bytes = base64.b64decode(img_url)
+        if len(image_bytes) > 0:
+            try:
+                gen_dir = os.path.join(settings.UPLOAD_DIR, "generated")
+                os.makedirs(gen_dir, exist_ok=True)
+                saved_path = os.path.join(gen_dir, f"{job_id}.png")
+                with open(saved_path, "wb") as f_out:
+                    f_out.write(image_bytes)
+                job.image_url = f"/static/uploads/generated/{job_id}.png"
+                db.commit()
+            except Exception:
+                pass
+            return Response(
+                content=image_bytes,
+                media_type="image/png",
+                headers={
+                    "Cache-Control": "public, max-age=86400, immutable",
+                    "Content-Disposition": f'inline; filename="job-{job_id}.png"'
+                }
+            )
+    except Exception:
+        pass
 
     raise HTTPException(status_code=404, detail="Định dạng ảnh không hợp lệ")
 
@@ -713,3 +772,43 @@ def batch_cancel_jobs(
 
 
 
+
+
+@router.post("/generations/jobs/{job_id}/retry")
+def retry_job(
+    job_id: str,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Thử lại (Retry) một job bị thất bại
+    """
+    user, _ = resolve_user_and_key(request, db)
+    if not user:
+        return error_response("UNAUTHORIZED", "Vui lòng đăng nhập để thực hiện", status_code=401)
+
+    try:
+        retried = generation_service.retry_job(db, job_id, user)
+        if not retried:
+            return error_response("NOT_FOUND", "Không tìm thấy job hoặc bạn không có quyền thử lại", status_code=404)
+        return success_response(retried.model_dump(mode="json"), "Đã gửi yêu cầu thử lại job thành công")
+    except HTTPException as e:
+        return error_response(f"HTTP_{e.status_code}", str(e.detail), status_code=e.status_code)
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", f"Lỗi khi thử lại job: {str(e)}", status_code=500)
+
+@router.post("/generations/jobs/batch-retry")
+def batch_retry_jobs(
+    payload: BatchRetryRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Thử lại hàng loạt các jobs theo danh sách ID
+    """
+    user, _ = resolve_user_and_key(request, db)
+    if not user:
+        return error_response("UNAUTHORIZED", "Vui lòng đăng nhập để thực hiện", status_code=401)
+
+    count = generation_service.batch_retry_jobs(db, payload.job_ids, user)
+    return success_response({"retried_count": count}, f"Đã gửi yêu cầu thử lại thành công {count} jobs")

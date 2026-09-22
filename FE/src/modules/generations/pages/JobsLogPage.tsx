@@ -19,14 +19,19 @@ export const JobsLogPage: React.FC = () => {
 
   const {
     jobs,
+    total,
     isLoading,
     statusFilter,
     setStatusFilter,
     searchQuery,
     setSearchQuery,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
     userStats,
     refetch,
-  } = useJobs(isAdmin);
+  } = useJobs(isAdmin, 10);
 
   const [selectedJob, setSelectedJob] = useState<JobLogItem | null>(null);
   const [isStudioOpen, setIsStudioOpen] = useState(false);
@@ -128,14 +133,14 @@ export const JobsLogPage: React.FC = () => {
     },
     {
       key: 'key',
-      title: 'KEY',
+      title: 'KHÓA / NGUỒN GỌI',
       render: (_, record) => (
         <div className="whitespace-nowrap">
           <span className="font-semibold text-slate-800 text-xs block">
-            {record.api_key_name || 'MintForge_Gateway_Auto'}
+            {record.api_key_name || 'Giao diện Web'}
           </span>
           <span className="text-[11px] text-slate-400 font-mono block">
-            {record.key_prefix || 'sk-H••••••EUHF'}
+            {record.key_prefix || 'Web Studio'}
           </span>
         </div>
       ),
@@ -144,7 +149,7 @@ export const JobsLogPage: React.FC = () => {
       key: 'status',
       title: 'TRẠNG THÁI',
       dataIndex: 'status',
-      render: (val) => {
+      render: (val, record: JobLogItem) => {
         const v = String(val);
         if (v === 'SUCCEEDED') {
           return (
@@ -156,14 +161,14 @@ export const JobsLogPage: React.FC = () => {
         if (v === 'FAILED') {
           return (
             <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-200/70 whitespace-nowrap">
-              Fail
+              {record.retry_count && record.retry_count > 0 ? `Fail (${record.retry_count} lần thử)` : 'Fail'}
             </span>
           );
         }
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 shadow-2xs whitespace-nowrap animate-pulse">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-            Đang chạy...
+            {record.retry_count && record.retry_count > 0 ? `Đang thử lại (${record.retry_count})...` : 'Đang chạy...'}
           </span>
         );
       },
@@ -192,6 +197,39 @@ export const JobsLogPage: React.FC = () => {
     },
     ...(isAdmin
       ? [
+          {
+            key: 'provider_name',
+            title: 'NHÀ CUNG CẤP',
+            render: (_: unknown, record: JobLogItem) => {
+              const isCache = record.is_cached || (record.provider_name && record.provider_name.includes('Cache'));
+              const isP2 = record.provider_name && (record.provider_name.includes('02') || record.provider_name.toLowerCase().includes('leeh'));
+              const isP1 = record.provider_name && (record.provider_name.includes('01') || record.provider_name.toLowerCase().includes('xompet'));
+
+              let pName = record.provider_name;
+              if (isCache) {
+                pName = '⚡ Cache';
+              } else if (!pName) {
+                pName = record.status === 'FAILED' ? 'Thất bại' : 'Nhà Cung Cấp 01';
+              }
+
+              let badgeStyle = 'bg-slate-50 text-slate-700 border-slate-200';
+              if (record.status === 'FAILED') {
+                badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+              } else if (isCache) {
+                badgeStyle = 'bg-purple-50 text-purple-700 border-purple-200';
+              } else if (isP2) {
+                badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+              } else if (isP1) {
+                badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+              }
+
+              return (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold border whitespace-nowrap ${badgeStyle}`}>
+                  {pName}
+                </span>
+              );
+            },
+          },
           {
             key: 'cost_provider',
             title: 'GIÁ NCC (VỐN)',
@@ -379,10 +417,10 @@ export const JobsLogPage: React.FC = () => {
         </div>
       )}
 
-      {/* Table Header Info Bar like the screenshot */}
+      {/* Table Header Info Bar */}
       <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
         <div>
-          Hiển thị <span className="font-semibold text-slate-700">{jobs.length > 0 ? `1-${Math.min(10, jobs.length)}` : '0'}</span> / <span className="font-semibold text-slate-700">{jobs.length.toLocaleString()}</span> logs
+          Hiển thị <span className="font-semibold text-slate-700">{total > 0 ? `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, total)}` : '0'}</span> / <span className="font-semibold text-slate-700">{total.toLocaleString()}</span> logs
         </div>
       </div>
 
@@ -398,7 +436,18 @@ export const JobsLogPage: React.FC = () => {
         }}
         loading={isLoading}
         emptyText="Chưa có job nào phù hợp với bộ lọc hiện tại"
-        pagination={{ pageSize: 10, pageSizeOptions: [10, 20, 50] }}
+        pagination={{
+          currentPage: page,
+          totalItems: total,
+          pageSize: pageSize,
+          onPageChange: (p) => setPage(p),
+          onPageSizeChange: (s) => {
+            setPageSize(s);
+            setPage(1);
+          },
+          pageSizeOptions: [10, 20, 50, 100],
+          serverSide: true,
+        }}
       />
 
       {/* Detail & Error Modal */}
@@ -406,6 +455,7 @@ export const JobsLogPage: React.FC = () => {
         job={selectedJob}
         isAdmin={isAdmin}
         onClose={() => setSelectedJob(null)}
+        onRetrySuccess={() => refetch(true)}
       />
 
       {/* Studio Modal */}

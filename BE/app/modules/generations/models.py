@@ -23,6 +23,7 @@ class ImageGenerationJob(Base):
     execution_mode = Column(String(32), default="sync", nullable=False)
     
     # Provider mapping
+    provider_name = Column(String(128), nullable=True)
     provider_task_id = Column(String(128), nullable=True)
     provider_generation_id = Column(String(128), nullable=True)
     image_url = Column(Text, nullable=True)
@@ -35,6 +36,7 @@ class ImageGenerationJob(Base):
     raw_response = Column(Text, nullable=True)
     latency_ms = Column(Integer, default=0)
     total_tokens = Column(Integer, default=1650, nullable=True) # Token tiêu thụ từ NCC
+    retry_count = Column(Integer, default=0, nullable=False)
     
     # Financials (VND)
     cost_provider = Column(Float, default=75.0)    # Chi phí trả NCC: 75đ (0đ nếu Cache Hit)

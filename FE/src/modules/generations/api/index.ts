@@ -89,4 +89,18 @@ export const generationsApi = {
       successToast: `Đã hủy thành công ${jobIds.length} jobs!`,
     });
   },
+
+  retryJob: async (jobId: string) => {
+    return await apiClient.post<JobLogItem>(`/generations/jobs/${jobId}/retry`, {}, {
+      successToast: 'Đã gửi yêu cầu thử lại job thành công!',
+    });
+  },
+
+  batchRetryJobs: async (jobIds: string[]) => {
+    return await apiClient.post<{ retried_count: number }>('/generations/jobs/batch-retry', {
+      job_ids: jobIds,
+    }, {
+      successToast: `Đã gửi yêu cầu thử lại ${jobIds.length} jobs thành công!`,
+    });
+  },
 };

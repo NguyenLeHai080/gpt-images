@@ -62,7 +62,7 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [resolution, setResolution] = useState<'1k' | '2k' | '4k'>('1k');
   const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
-  const [referenceUrl, setReferenceUrl] = useState('');
+  const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
   const [customerBalance, setCustomerBalance] = useState<number | null>(null);
@@ -118,14 +118,14 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
       return;
     }
 
-    if (mode === 'edit' && !referenceUrl.trim()) {
+    if (mode === 'edit' && referenceUrls.length === 0) {
       alert.toast('Vui lòng tải ảnh cần sửa lên hoặc dán đường dẫn ảnh', 'warning');
       return;
     }
 
     const currentPrompt = prompt.trim();
-    const currentRef = referenceUrl.trim();
-    const isEditMode = mode === 'edit' || Boolean(currentRef);
+    const currentRefs = [...referenceUrls];
+    const isEditMode = mode === 'edit' || currentRefs.length > 0;
 
     // Đóng modal và báo cho người dùng
     onClose();
@@ -138,7 +138,7 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
 
     // Reset form
     setPrompt('');
-    setReferenceUrl('');
+    setReferenceUrls([]);
     setIsGenerating(false);
 
     try {
@@ -149,8 +149,8 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
         aspect_ratio: aspectRatio,
         resolution,
         quality,
-        reference: currentRef || undefined,
-        references: currentRef ? [currentRef] : undefined,
+        reference: currentRefs[0] || undefined,
+        references: currentRefs.length > 0 ? currentRefs : undefined,
         count: 1,
         executionMode: 'async',
       });
@@ -321,8 +321,9 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
               </span>
             </div>
             <ReferenceImageUploader
-              referenceUrl={referenceUrl}
-              onChange={setReferenceUrl}
+              referenceUrls={referenceUrls}
+              onChangeUrls={setReferenceUrls}
+              maxImages={5}
             />
           </div>
         )}
@@ -441,6 +442,19 @@ export const StudioModal: React.FC<StudioModalProps> = ({ isOpen, onClose, onSuc
               options={QUALITY_OPTIONS}
             />
           </div>
+        </div>
+
+        {/* Chế độ Auto-Retry */}
+        <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-emerald-800 text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              <strong>Chế độ Auto-Retry: Đang bật</strong> • Tự động khắc phục & thử lại khi NCC tạm thời quá tải hoặc nghẽn mạng.
+            </span>
+          </div>
+          <span className="font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
+            Tự động
+          </span>
         </div>
 
         {/* Thông tin giải thích phân biệt Quality vs Resolution */}
