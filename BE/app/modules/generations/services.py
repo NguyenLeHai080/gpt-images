@@ -714,6 +714,26 @@ class GenerationService:
         - Admin: Xem toàn bộ jobs của tất cả user
         - Customer (Member/Dev): Chỉ xem jobs do tài khoản của mình tạo
         """
+        # Tự động quét và thu hồi các job bị treo (PROCESSING / PENDING) quá 5 phút
+        try:
+            from datetime import timedelta
+            stale_threshold = datetime.utcnow() - timedelta(minutes=5)
+            stale_jobs = db.query(ImageGenerationJob).filter(
+                ImageGenerationJob.status.in_(["PROCESSING", "PENDING"]),
+                ImageGenerationJob.created_at < stale_threshold
+            ).all()
+            if stale_jobs:
+                for sj in stale_jobs:
+                    sj.status = "FAILED"
+                    sj.error_code = "TIMEOUT_EXCEEDED"
+                    sj.error_message = "Thời gian xử lý vượt quá 5 phút (hết thời gian chờ từ NCC). Vui lòng bấm Thử lại để chạy lại."
+                    sj.charged_customer = 0.0
+                    sj.cost_provider = 0.0
+                    sj.profit = 0.0
+                db.commit()
+        except Exception as sweep_err:
+            print(f"[get_job_logs] Warning auto-sweep: {sweep_err}")
+
         is_admin = current_user.role in ("SUPER_ADMIN", "ADMIN")
         query = db.query(ImageGenerationJob)
 
