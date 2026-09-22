@@ -18,7 +18,7 @@ class ProviderClient:
 
     def __init__(self):
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        self.timeout = 300  # 5 phút tối đa (tránh treo vô tận nếu NCC đứt kết nối)
+        self.timeout = 900  # 15 phút tối đa
         self.is_quota_exhausted = False
         self.custom_budget_total: Optional[float] = None
         self._cached_wallet: Optional[Dict[str, Any]] = None

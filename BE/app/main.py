@@ -30,13 +30,13 @@ async def lifespan(app: FastAPI):
         print("[PostgreSQL] Connected successfully. Initializing schema and seeds...")
         init_database()
         
-        # Dọn dẹp các job PROCESSING bị mồ côi (treo > 8 phút) do restart máy chủ để khách có thể bấm Thử lại
+        # Dọn dẹp các job PROCESSING bị mồ côi (treo > 15 phút) do restart máy chủ để khách có thể bấm Thử lại
         try:
             from app.core.database import SessionLocal
             from app.modules.generations.models import ImageGenerationJob
             from datetime import datetime, timedelta
             sweep_db = SessionLocal()
-            stale_threshold = datetime.utcnow() - timedelta(minutes=8)
+            stale_threshold = datetime.utcnow() - timedelta(minutes=15)
             orphaned = sweep_db.query(ImageGenerationJob).filter(
                 ImageGenerationJob.status.in_(["PROCESSING", "PENDING"]),
                 ImageGenerationJob.created_at < stale_threshold
