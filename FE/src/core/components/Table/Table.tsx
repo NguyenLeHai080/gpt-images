@@ -22,6 +22,17 @@ export function Table<T extends Record<string, any>>({
   const [currentPage, setCurrentPage] = useState(pagination ? pagination.currentPage || 1 : 1);
   const [pageSize, setPageSize] = useState(pagination ? pagination.pageSize || 10 : 10);
 
+  const isServerSide = Boolean(
+    pagination &&
+      (pagination.serverSide ||
+        (pagination.totalItems !== undefined &&
+          pagination.currentPage !== undefined &&
+          pagination.onPageChange !== undefined))
+  );
+
+  const activeCurrentPage = pagination && pagination.currentPage !== undefined ? pagination.currentPage : currentPage;
+  const activePageSize = pagination && pagination.pageSize !== undefined ? pagination.pageSize : pageSize;
+
   // Sorting
   const sortedData = useMemo(() => {
     if (!sortKey || !sortOrder) return data;
@@ -39,12 +50,12 @@ export function Table<T extends Record<string, any>>({
     });
   }, [data, sortKey, sortOrder, columns]);
 
-  // Pagination slicing (if not managed externally)
+  // Pagination slicing (if not managed externally / server-side)
   const displayData = useMemo(() => {
-    if (!pagination) return sortedData;
-    const start = (currentPage - 1) * pageSize;
-    return sortedData.slice(start, start + pageSize);
-  }, [sortedData, pagination, currentPage, pageSize]);
+    if (!pagination || isServerSide) return sortedData;
+    const start = (activeCurrentPage - 1) * activePageSize;
+    return sortedData.slice(start, start + activePageSize);
+  }, [sortedData, pagination, isServerSide, activeCurrentPage, activePageSize]);
 
   const handleSort = (col: Column<T>) => {
     if (!col.sortable) return;
@@ -215,11 +226,11 @@ export function Table<T extends Record<string, any>>({
       </div>
 
       {/* Integrated Pagination */}
-      {pagination !== false && data.length > 0 && (
+      {pagination !== false && ((isServerSide ? (pagination?.totalItems ?? 0) : data.length) > 0) && (
         <Pagination
-          currentPage={currentPage}
+          currentPage={activeCurrentPage}
           totalItems={pagination?.totalItems ?? data.length}
-          pageSize={pageSize}
+          pageSize={activePageSize}
           onPageChange={(page) => {
             setCurrentPage(page);
             if (pagination?.onPageChange) pagination.onPageChange(page);

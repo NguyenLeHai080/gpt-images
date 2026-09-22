@@ -446,6 +446,7 @@ export const JobsLogPage: React.FC = () => {
             setPage(1);
           },
           pageSizeOptions: [10, 20, 50, 100],
+          serverSide: true,
         }}
       />
 

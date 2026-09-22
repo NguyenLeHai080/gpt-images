@@ -18,13 +18,17 @@ export interface RowSelection<T> {
   onChange: (selectedRowKeys: string[], selectedRows: T[]) => void;
 }
 
+export interface TablePaginationConfig extends Partial<PaginationProps> {
+  serverSide?: boolean;
+}
+
 export interface TableProps<T> {
   columns: Column<T>[];
   data: T[];
   rowKey?: keyof T | ((record: T) => string);
   loading?: boolean;
   emptyText?: string;
-  pagination?: Partial<PaginationProps> | false;
+  pagination?: TablePaginationConfig | false;
   onRowClick?: (record: T) => void;
   rowSelection?: RowSelection<T>;
   striped?: boolean;
