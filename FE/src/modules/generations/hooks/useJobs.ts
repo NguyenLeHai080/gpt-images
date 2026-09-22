@@ -3,7 +3,7 @@ import { generationsApi } from '../api';
 import { alert } from '../../../core/alert';
 import type { JobLogItem, UserJobStats } from '../types';
 
-export const useJobs = (_isAdmin: boolean = false) => {
+export const useJobs = (_isAdmin: boolean = false, initialPageSize: number = 20) => {
   const [jobs, setJobs] = useState<JobLogItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -11,6 +11,7 @@ export const useJobs = (_isAdmin: boolean = false) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   const prevJobsRef = useRef<JobLogItem[]>([]);
 
@@ -39,7 +40,7 @@ export const useJobs = (_isAdmin: boolean = false) => {
         status: statusFilter,
         search: debouncedSearch,
         page,
-        page_size: 20,
+        page_size: pageSize,
       });
 
       if (res.success && res.data) {
@@ -75,7 +76,7 @@ export const useJobs = (_isAdmin: boolean = false) => {
         setIsLoading(false);
       }
     }
-  }, [statusFilter, debouncedSearch, page]);
+  }, [statusFilter, debouncedSearch, page, pageSize]);
 
   // Khi status hoặc search hoặc page thay đổi, load lại bảng jobs
   useEffect(() => {
@@ -118,6 +119,8 @@ export const useJobs = (_isAdmin: boolean = false) => {
     setSearchQuery,
     page,
     setPage,
+    pageSize,
+    setPageSize,
     userStats,
     refetch,
     addOptimisticJob,
