@@ -29,6 +29,27 @@ async def lifespan(app: FastAPI):
     if is_connected:
         print("[PostgreSQL] Connected successfully. Initializing schema and seeds...")
         init_database()
+        
+        # Dọn dẹp các job PROCESSING bị mồ côi (treo > 8 phút) do restart máy chủ để khách có thể bấm Thử lại
+        try:
+            from app.core.database import SessionLocal
+            from app.modules.generations.models import ImageGenerationJob
+            from datetime import datetime, timedelta
+            sweep_db = SessionLocal()
+            stale_threshold = datetime.utcnow() - timedelta(minutes=8)
+            orphaned = sweep_db.query(ImageGenerationJob).filter(
+                ImageGenerationJob.status.in_(["PROCESSING", "PENDING"]),
+                ImageGenerationJob.created_at < stale_threshold
+            ).all()
+            if orphaned:
+                for oj in orphaned:
+                    oj.status = "FAILED"
+                    oj.error_message = "Tiến trình bị gián đoạn do khởi động lại hệ thống hoặc vượt quá thời gian chờ từ NCC."
+                sweep_db.commit()
+                print(f"[Startup] Đã dọn dẹp {len(orphaned)} jobs bị treo từ phiên trước.")
+            sweep_db.close()
+        except Exception as sweep_err:
+            print(f"[Startup] Warning dọn dẹp orphaned jobs: {sweep_err}")
     else:
         print("[PostgreSQL] Warning: Could not connect to PostgreSQL. Verify credentials in .env")
     yield

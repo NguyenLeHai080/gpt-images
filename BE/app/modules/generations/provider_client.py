@@ -18,7 +18,7 @@ class ProviderClient:
 
     def __init__(self):
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        self.timeout = None
+        self.timeout = 300  # 5 phút tối đa (tránh treo vô tận nếu NCC đứt kết nối)
         self.is_quota_exhausted = False
         self.custom_budget_total: Optional[float] = None
         self._cached_wallet: Optional[Dict[str, Any]] = None
@@ -840,6 +840,12 @@ class ProviderClient:
                     or status_code == 429
                     or "gateway_request_failed" in err_text
                     or "rejected the request" in err_text
+                    or "rejected this request" in err_text
+                    or "quota coordinator" in err_text
+                    or "capacity is currently busy" in err_text
+                    or "currently busy" in err_text
+                    or "overloaded" in err_text
+                    or "rate limit" in err_text
                     or "timeout" in err_text
                     or "connection" in err_text
                     or "cloudflare" in err_text

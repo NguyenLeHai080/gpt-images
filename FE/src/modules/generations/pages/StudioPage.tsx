@@ -126,6 +126,18 @@ export const StudioPage: React.FC = () => {
     }
   };
 
+  // Hủy 1 job đang xử lý
+  const handleCancelSingleJob = async (jobId: string) => {
+    try {
+      const res = await generationsApi.batchCancelJobs([jobId]);
+      if (res.success) {
+        refetch(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Thử lại hàng loạt jobs
   const handleBatchRetry = async () => {
     if (selectedRowKeys.length === 0) return;
@@ -316,6 +328,19 @@ export const StudioPage: React.FC = () => {
               className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 px-2"
             >
               <RotateCcw size={14} className={retryingId === record.id ? 'animate-spin' : ''} />
+            </Button>
+          )}
+
+          {/* Icon Hủy tác vụ (nếu đang PROCESSING / PENDING) */}
+          {(record.status === 'PROCESSING' || record.status === 'PENDING') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleCancelSingleJob(record.id)}
+              title="Hủy tác vụ đang chạy này"
+              className="text-amber-500 hover:text-rose-600 hover:bg-rose-50 px-2"
+            >
+              <XCircle size={14} />
             </Button>
           )}
 

@@ -18,6 +18,23 @@ interface JobDetailModalProps {
 
 export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isAdmin = false, onClose, onRetrySuccess }) => {
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    if (!job) return;
+    setIsCancelling(true);
+    try {
+      const res = await generationsApi.batchCancelJobs([job.id]);
+      if (res.success) {
+        if (onRetrySuccess) onRetrySuccess();
+        onClose();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const handleRetry = async () => {
     if (!job) return;
@@ -61,6 +78,17 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, isA
       }
       footer={
         <div className="flex justify-end gap-2 w-full">
+          {(job.status === 'PROCESSING' || job.status === 'PENDING') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className="border-amber-400 text-amber-600 hover:bg-amber-50 font-semibold"
+            >
+              {isCancelling ? 'Đang hủy...' : 'Hủy tác vụ này'}
+            </Button>
+          )}
           {job.status === 'FAILED' && (
             <Button
               variant="primary"
