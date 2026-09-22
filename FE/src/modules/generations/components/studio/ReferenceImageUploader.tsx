@@ -23,7 +23,6 @@ export const ReferenceImageUploader: React.FC<ReferenceImageUploaderProps> = ({
   onChange = () => {},
   referenceUrls,
   onChangeUrls,
-  _maxImages = 5,
 }) => {
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [isDragging, setIsDragging] = useState(false);
